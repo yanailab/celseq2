@@ -1,0 +1,68 @@
+######################################################################
+from helper import mkfolder, join_path, base_name
+import glob
+
+DIR_PROJ='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
+SUBDIR_FASTQ='bc_split_Y'
+SUBDIR_ALIGN='alignment_snake'
+SUBDIR_LOG='log'
+SUBDIRS = [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_LOG]
+
+BOWTIE2_INDEX_PREFIX='/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
+BOWTIE2='/local/apps/bowtie2/2.3.1/bowtie2'
+
+num_threads=5
+verbose=True
+fq_names=list(map(base_name,
+                  glob.glob(join_path(DIR_PROJ,
+                                      SUBDIR_FASTQ, '*.fastq'))))
+if verbose:
+    print(fq_names)
+
+
+#####################
+## Snakemake rules ##
+#####################
+rule all:
+    input:
+        expand(join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam'),
+               fq=fq_names),
+    params: cluster='-S /bin/bash -wd /ifs/home/yy1533/Lab/cel-seq-pipe/qsub ' +
+        '-M yun.yan@nyumc.org ' +
+        '-m abe -j y -l h_vmem=30G -N Y_bowtie2'
+
+# ref: http://bioinformatics.mdc-berlin.de/intro2UnixandSGE/sun_grid_engine_for_beginners/how_to_submit_a_job_using_qsub.html
+
+rule setup_dir:
+    output: SUBDIRS
+    run:
+        for i in output: mkfolder(i)
+
+## Alignment ##
+rule align_bowtie2:
+    input:
+        join_path(DIR_PROJ, SUBDIR_FASTQ, '{fq}.fastq')
+    output:
+        join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam')
+    threads: num_threads
+    log: join_path(DIR_PROJ, SUBDIR_LOG, 'Align-Bowtie2_Cell-{fq}.log')
+    shell:
+        """
+        {BOWTIE2} \
+        -p {threads} \
+        -x {BOWTIE2_INDEX_PREFIX} \
+        -U {input} \
+        -S {output} 2>{log}
+        """
+
+## HT-seq Count ##
+# rule sort_sam:
+#     input:
+#         join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam')
+#     output:
+
+
+# rule htseq_count:
+#     input:
+
+
