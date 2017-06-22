@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#$ -S /bin/bash
+#$ -S /usr/bin/bash
 #$ -wd /ifs/home/yy1533/Lab/cel-seq-pipe/qsub
 #$ -M yun.yan@nyumc.org
 #$ -m abe

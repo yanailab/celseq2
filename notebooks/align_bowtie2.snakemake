@@ -1,5 +1,5 @@
 ######################################################################
-from helper import mkfolder, join_path, base_name
+from celseq2.helper import mkfolder, join_path, base_name
 import glob
 
 DIR_PROJ='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
@@ -27,7 +27,7 @@ rule all:
     input:
         expand(join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam'),
                fq=fq_names),
-    params: cluster='-S /bin/bash -wd /ifs/home/yy1533/Lab/cel-seq-pipe/qsub ' +
+    params: cluster='-S /usr/bin/env/bash -wd /ifs/home/yy1533/Lab/cel-seq-pipe/qsub ' +
         '-M yun.yan@nyumc.org ' +
         '-m abe -j y -l h_vmem=30G -N Y_bowtie2'
 

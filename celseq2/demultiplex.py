@@ -1,11 +1,11 @@
+#!/usr/bin/env python3
 # coding: utf-8
 from collections import Counter
 
 import csv
-import os
 import argparse
 
-from celseq2.helper import filehandle_fastq_gz, print_logger
+from celseq2.helper import filehandle_fastq_gz, print_logger, join_path
 
 
 def bc_dict_seq2id(bc_index_fpath):
@@ -50,10 +50,10 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_seq2id,
 
     bc_fhout = dict()
     for bc_seq, bc_id in dict_bc_seq2id.items():
-        bc_fhout[bc_seq] = os.path.join(outdir, 'BC-{}-{}.fastq'.format(bc_id,
-                                                                        bc_seq))
-    bc_fhout['UNKNOWNBC_R1'] = os.path.join(outdir, 'UNKNOWNBC_R1.fastq')
-    bc_fhout['UNKNOWNBC_R2'] = os.path.join(outdir, 'UNKNOWNBC_R2.fastq')
+        bc_fhout[bc_seq] = join_path(outdir,
+                                     'BC-{}-{}.fastq'.format(bc_id, bc_seq))
+    bc_fhout['UNKNOWNBC_R1'] = join_path(outdir, 'UNKNOWNBC_R1.fastq')
+    bc_fhout['UNKNOWNBC_R2'] = join_path(outdir, 'UNKNOWNBC_R2.fastq')
 
     for bc_seq, v in bc_fhout.items():
         bc_fhout[bc_seq] = open(v, 'w')
@@ -112,7 +112,8 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_seq2id,
         if len(tx_seq) > len_tx:
             tx_seq, tx_qualstr = tx_seq[:len_tx], tx_qualstr[:len_tx]
         read_name = '@BC-{}_UMI-{}'.format(cell_bc, umi)
-        fhout.write('{}\n{}\n{}\n{}\n'.format(read_name, tx_seq, "+", tx_qualstr))
+        fhout.write('{}\n{}\n{}\n{}\n'.format(read_name, tx_seq,
+                                              "+", tx_qualstr))
         sample_counter[cell_bc] += 1
         sample_counter['saved'] += 1
 
@@ -128,11 +129,11 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_seq2id,
 
 def write_demultiplexing(stats, dict_bc_seq2id, stats_fpath):
     if stats_fpath is None:
-        stats_fpath = os.path.join('demultiplexing.log')
+        stats_fpath = 'demultiplexing.log'
     try:
         fh_stats = open(stats_fpath, 'w')
-    except:
-        raise
+    except Exception as e:
+        raise Exception(e)
     fh_stats.write('BC\tReads(#)\tReads(%)\n')
     for k, v in dict_bc_seq2id.items():
         fh_stats.write('{:03d}-{}\t{:,}\t{:06.2f}\n'.format(v, k, stats[k],
