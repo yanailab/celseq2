@@ -128,6 +128,10 @@ setup(
 
             ('bc_demultiplex = '
              'celseq2.demultiplex:main'),
+            ('cook_annotation = '
+             'celseq2.prepare_annotation_model:main'),
+            # ('count-umi = '
+            #  'celseq2.count_umi:main'),
         ],
     },
 
