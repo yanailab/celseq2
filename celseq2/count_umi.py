@@ -20,7 +20,7 @@ def _umi_seq(name, length=6):
 def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
              is_gapped_aligner=False):
     '''
-    SAM + GFF => UMI (saved in Python's Counter)
+    Single SAM + GFF => UMI (saved in Python's Counter)
     '''
     umi_cnt = defaultdict(set)
     # aln_cnt = Counter()
@@ -63,5 +63,4 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
         #     aln_cnt["_ambiguous"] += 1 
     umi_vec = Counter({x : len(umi_cnt.get(x, set())) for x in umi_cnt})
     return(umi_vec)
-
 
