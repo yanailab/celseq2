@@ -18,7 +18,7 @@ def _umi_seq(name, length=6):
 
 
 def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
-             is_gapped_aligner=False):
+              is_gapped_aligner=False):
     '''
     Single SAM + GFF => UMI (saved in Python's Counter)
     '''
