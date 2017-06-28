@@ -5,6 +5,8 @@
 SAM file of one cell + GFF => UMI vector of the cell
 '''
 import HTSeq
+import pickle
+import argparse
 from collections import defaultdict, Counter
 
 
@@ -18,13 +20,16 @@ def _umi_seq(name, length=6):
 
 
 def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
-              is_gapped_aligner=False):
+              is_gapped_aligner=False, dumpto=None):
     '''
     Single SAM + GFF => UMI (saved in Python's Counter)
     '''
     umi_cnt = defaultdict(set)
     # aln_cnt = Counter()
     fh_aln = HTSeq.SAM_Reader(sam_fpath)
+    if type(features) is str:
+        features = pickle.load(open(features, 'rb'))
+        
     i = 0
     for aln in fh_aln:
         i += 1
@@ -62,5 +67,31 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
         # else:
         #     aln_cnt["_ambiguous"] += 1 
     umi_vec = Counter({x : len(umi_cnt.get(x, set())) for x in umi_cnt})
+    if dumpto:
+        pickle.dump(umi_vec, open(dumpto, 'wb'))
     return(umi_vec)
 
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--sam_fpath', type=str, metavar='FILENAME',
+                        help='File path to SAM file')
+    parser.add_argument('--features', metavar='FILENAME.pickle|Counter',
+                        help='Either file path (pickle format only) or Python object in counter')
+    parser.add_argument('--umi-length', type=int, metavar='N',  default=6,
+                        help='Length of UMI (default=6)')
+    parser.add_argument('--aln-qual-min', type=int, metavar='N', default=10,
+                        help='Acceptable min alignment quality (default=10)')
+    parser.add_argument('--is-gapped-aligner', dest='is_gapped_aligner', action='store_true')
+    parser.set_defaults(is_gapped_aligner=False)
+    parser.add_argument('--dumpto', type=str, metavar='FILENAME', 
+                        help='File path to save umi count in pickle')
+    args = parser.parse_args()
+    
+    _ = count_umi(sam_fpath=args.sam_fpath, 
+                  features=args.features, 
+                  len_umi=args.umi_length,
+                  accept_aln_qual_min=args.aln_qual_min,
+                  is_gapped_aligner=args.is_gapped_aligner,
+                  dumpto=args.dumpto)
+    

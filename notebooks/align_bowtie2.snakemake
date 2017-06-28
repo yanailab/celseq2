@@ -1,18 +1,34 @@
 ######################################################################
 from celseq2.helper import mkfolder, join_path, base_name
+# from celseq2.prepare_annotation_model import cook_anno_model
+# from celseq2.count_umi import count_umi
+# import pickle
+
 import glob
 
+## Project Folder layout ##
 DIR_PROJ='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
-SUBDIR_FASTQ='bc_split_Y'
-SUBDIR_ALIGN='alignment_snake'
+SUBDIR_FASTQ='smallfq'
+SUBDIR_ALIGN='smallsam'
+SUBDIR_COUNT='smallcnt'
+SUBDIR_EXPR ='smallexpr'
 SUBDIR_LOG='log'
-SUBDIRS = [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_LOG]
+SUBDIR_DIAG='smalldiagnose'
+SUBDIR_ANNO='annotation'
 
+SUBDIRS = [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_COUNT, SUBDIR_EXPR, SUBDIR_LOG, SUBDIR_DIAG, SUBDIR_ANNO]
+
+## Tools ##
 BOWTIE2_INDEX_PREFIX='/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
 BOWTIE2='/local/apps/bowtie2/2.3.1/bowtie2'
 
+## Annotations ##
+GFF='/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
+
+## Running Parameters ##
 num_threads=5
 verbose=True
+
 fq_names=list(map(base_name,
                   glob.glob(join_path(DIR_PROJ,
                                       SUBDIR_FASTQ, '*.fastq'))))
@@ -25,7 +41,7 @@ if verbose:
 #####################
 rule all:
     input:
-        expand(join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam'),
+        expand(join_path(DIR_PROJ, SUBDIR_COUNT, '{fq}.cnt.pickle'),
                fq=fq_names),
     params: cluster='-S /usr/bin/env/bash -wd /ifs/home/yy1533/Lab/cel-seq-pipe/qsub ' +
         '-M yun.yan@nyumc.org ' +
@@ -36,7 +52,8 @@ rule all:
 rule setup_dir:
     output: SUBDIRS
     run:
-        for i in output: mkfolder(i)
+        for i in output:
+            mkfolder(i)
 
 ## Alignment ##
 rule align_bowtie2:
@@ -55,14 +72,42 @@ rule align_bowtie2:
         -S {output} 2>{log}
         """
 
-## HT-seq Count ##
-# rule sort_sam:
-#     input:
-#         join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam')
-#     output:
-
-
-# rule htseq_count:
-#     input:
-
+## HT-seq Count UMI ##
+rule cook_annotation:
+    input: GFF
+    output: join_path(DIR_PROJ, SUBDIR_ANNO, base_name(GFF) + '.pickle')
+    shell:
+        """
+        cook-annotation \
+        --gff-file {GFF} \
+        --feature-atrr gene_id \
+        --feature-type exon \
+        --anno-store-fpath {output} \
+        --verbose
+        """
+        # cook_anno_model(GFF, feature_atrr='gene_id', feature_type='exon',
+        #                     stranded=True,
+        #                     anno_store_fpath=output, verbose=verbose)
+        
+        
+rule umi_count:
+    input:
+        gff=rules.cook_annotation.output,
+        sam=rules.align_bowtie2.output
+    output:
+        join_path(DIR_PROJ, SUBDIR_COUNT, '{fq}.cnt.pickle')
+    shell:
+        """
+        count-umi \
+        --sam_fpath {input.sam} \
+        --features {input.gff} \
+        --umi-length 6\
+        --aln-qual-min 10 \
+        --dumpto {output}
+        """
+        # count_umi(sam_fpath={input.sam},
+        #               features={input.gff},
+        #               len_umi=6, accept_aln_qual_min=10,
+        #               is_gapped_aligner=False,
+        #               dumpto=output)
 
