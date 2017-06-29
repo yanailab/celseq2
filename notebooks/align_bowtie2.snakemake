@@ -1,23 +1,25 @@
 ######################################################################
-from celseq2.helper import mkfolder, join_path, base_name
+from celseq2.helper import mkfolder, join_path, base_name, is_nonempty_file, print_logger
 from celseq2.prepare_annotation_model import cook_anno_model
 from celseq2.count_umi import count_umi
+import pandas as pd
 
 from pytools.persistent_dict import PersistentDict
 storage = PersistentDict("mystorage")
 import glob
 
+## Inforamtion ##
+PROJECT_NAME='celseq2_demo'
 ## Project Folder layout ##
 DIR_PROJ='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
 SUBDIR_FASTQ='smallfq'
 SUBDIR_ALIGN='smallsam'
-SUBDIR_COUNT='smallcnt'
 SUBDIR_EXPR ='smallexpr'
 SUBDIR_LOG='log'
 SUBDIR_DIAG='smalldiagnose'
 SUBDIR_ANNO='annotation'
 
-SUBDIRS = [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_COUNT, SUBDIR_EXPR,
+SUBDIRS = [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_EXPR,
            SUBDIR_LOG, SUBDIR_DIAG, SUBDIR_ANNO]
 
 ## Tools ##
@@ -31,23 +33,32 @@ GFF='/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.g
 num_threads=5
 verbose=True
 
+## Pipeline reserved ##
+aln_diagnose_item = ["_unmapped", 
+                     "_low_map_qual", '_multimapped', "_uniquemapped", 
+                     "_no_feature", "_ambiguous", 
+                     "_total"]
+## Dynamic Operations ##
 fq_names=list(map(base_name,
                   glob.glob(join_path(DIR_PROJ,
                                       SUBDIR_FASTQ, '*.fastq'))))
-if verbose:
-    print(fq_names)
-
 
 #####################
 ## Snakemake rules ##
 #####################
 rule all:
     input:
-        expand(join_path(DIR_PROJ, SUBDIR_COUNT, '{fq}.cnt.pickle'),
-               fq=fq_names),
-    params: cluster='-S /usr/bin/env/bash -wd /ifs/home/yy1533/Lab/cel-seq-pipe/qsub ' +
-        '-M yun.yan@nyumc.org ' +
-        '-m abe -j y -l h_vmem=30G -N Y_bowtie2'
+        join_path(DIR_PROJ, SUBDIR_EXPR, PROJECT_NAME + '.csv'),
+        join_path(DIR_PROJ, SUBDIR_EXPR, PROJECT_NAME + '.pickle'),
+        join_path(DIR_PROJ, SUBDIR_DIAG, PROJECT_NAME + '_alignment.csv')
+    run:
+        if verbose:
+            print_logger('Following cells have been processed:')
+            print_logger(fq_names)
+                      
+    # params: cluster='-S /usr/bin/env/bash -wd /ifs/home/yy1533/Lab/cel-seq-pipe/qsub ' +
+    #     '-M yun.yan@nyumc.org ' +
+    #     '-m abe -j y -l h_vmem=30G -N Y_bowtie2'
 
 # ref: http://bioinformatics.mdc-berlin.de/intro2UnixandSGE/sun_grid_engine_for_beginners/how_to_submit_a_job_using_qsub.html
 
@@ -64,7 +75,9 @@ rule align_bowtie2:
     output:
         join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam')
     threads: num_threads
-    log: join_path(DIR_PROJ, SUBDIR_LOG, 'Align-Bowtie2_Cell-{fq}.log')
+    log: 
+        join_path(DIR_PROJ, SUBDIR_LOG, 
+                  'Align-Bowtie2_Cell-{fq}.log')
     shell:
         """
         {BOWTIE2} \
@@ -78,45 +91,57 @@ rule align_bowtie2:
 rule cook_annotation:
     input: GFF
     output: 
-        temp(join_path(DIR_PROJ, SUBDIR_ANNO, base_name(GFF) + '.pickle'))
-    # shell:
-    #     """
-    #     cook-annotation \
-    #     --gff-file {GFF} \
-    #     --feature-atrr gene_id \
-    #     --feature-type exon \
-    #     --dumpto {output} \
-    #     --verbose
-    #     """
+        temp(join_path(DIR_PROJ, SUBDIR_ANNO, 
+                       base_name(GFF) + '.pickle'))
     run:
         v = cook_anno_model(GFF, feature_atrr='gene_id', 
                                    feature_type='exon',
                                    stranded=True,
                                    dumpto=output[0],
                                    verbose=verbose)
-        storage.store("features", v)
-        
-        
-        
-rule umi_count:
+        storage.store("anno", v)
+
+           
+rule umi_matrix:
     input:
-        gff=join_path(DIR_PROJ, SUBDIR_ANNO, base_name(GFF) + '.pickle'),
-        sam=join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam')
+        gff=join_path(DIR_PROJ, SUBDIR_ANNO, 
+                      base_name(GFF) + '.pickle'),
+        sam=expand(join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam'), 
+                   fq=fq_names)
     output:
-        join_path(DIR_PROJ, SUBDIR_COUNT, '{fq}.cnt.pickle')
-    # shell:
-    #     """
-    #     count-umi \
-    #     --sam_fpath {input.sam} \
-    #     --features {input.gff} \
-    #     --umi-length 6\
-    #     --aln-qual-min 10 \
-    #     --dumpto {output}
-    #     """
+        csv=join_path(DIR_PROJ, SUBDIR_EXPR, 
+                      PROJECT_NAME + '.csv'),
+        pickle=join_path(DIR_PROJ, SUBDIR_EXPR, 
+                         PROJECT_NAME + '.pickle'),
+        diagnose=join_path(DIR_PROJ, SUBDIR_DIAG,
+                           PROJECT_NAME + '_alignment.csv'),
+                           
+    log:
+        join_path(DIR_PROJ, SUBDIR_LOG, 'umi_matrix.log')
     run:
-        _ = count_umi(sam_fpath=input.sam[0],
-                      features=storage.fetch("features"),
-                      len_umi=6, accept_aln_qual_min=10,
-                      is_gapped_aligner=False,
-                      dumpto=output[0])
+        features_f = storage.fetch("anno")[0]
+        all_genes = sorted(list(storage.fetch("anno")[1]))
+        expr_dict={}
+        aln_dict={}
+        for s in input.sam:
+            cell = base_name(s)
+            print_logger('Counting cell {}'.format(cell))
+            umi_cnt, aln_cnt = count_umi(sam_fpath=s,
+                                         features=features_f,
+                                         len_umi=6,
+                                         accept_aln_qual_min=10,
+                                         is_gapped_aligner=False,
+                                         dumpto=None)
+            gnames = [x for x in umi_cnt]
+            expr_dict[cell] = pd.Series([umi_cnt[x] for x in gnames],
+                                        index=gnames)
+            aln_dict[cell] = pd.Series([aln_cnt[x] for x in aln_diagnose_item],
+                                       index=aln_diagnose_item)
+        expr_df = pd.DataFrame(expr_dict, index=all_genes).fillna(0)
+        expr_df.to_csv(output.csv[0])
+        expr_df.to_pickle(output.pickle[0])
+        
+        diagnose_aln = pd.DataFrame(aln_dict, index=aln_diagnose_item).fillna(0)
+        diagnose_aln.to_csv(output.diagnose[0])
+        
 

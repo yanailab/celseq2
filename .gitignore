@@ -1,5 +1,6 @@
 # project-specific
 /.vscode/
+.snakemake/
 
 */data/
 

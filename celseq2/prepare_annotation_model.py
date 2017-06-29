@@ -5,12 +5,13 @@ import argparse
 import pickle
 
 from celseq2.helper import print_logger
+from collections import namedtuple
 
 def cook_anno_model(gff_fpath, feature_atrr='gene_id', feature_type='exon',
                     stranded=True, dumpto=None, verbose=False):
     features = HTSeq.GenomicArrayOfSets("auto", stranded=stranded)
     fh_gff = HTSeq.GFF_Reader(gff_fpath)
-    
+    all_genes = set()
     i=0
     for gff in fh_gff:
         if verbose and i % 100000 == 0:
@@ -19,12 +20,18 @@ def cook_anno_model(gff_fpath, feature_atrr='gene_id', feature_type='exon',
         
         if gff.type == feature_type:
             features[gff.iv] += gff.attr[feature_atrr].strip()
+            all_genes.add(gff.attr[feature_atrr].strip())
+        else:
+            pass
+        
+        # if i == 5000:
+        #     break ## test mode
+    print_logger('Processed {:,} lines of GFF...'.format(i))        
     
     if dumpto:
         with open(dumpto, 'wb') as fh:
-            pickle.dump(features, fh)
-            
-    return(features)
+            pickle.dump(features, fh)        
+    return((features, all_genes))
     
     
 def main():
