@@ -85,14 +85,14 @@ rule cook_annotation:
     #     --gff-file {GFF} \
     #     --feature-atrr gene_id \
     #     --feature-type exon \
-    #     --anno-store-fpath {output} \
+    #     --dumpto {output} \
     #     --verbose
     #     """
     run:
         v = cook_anno_model(GFF, feature_atrr='gene_id', 
                                    feature_type='exon',
                                    stranded=True,
-                                   anno_store_fpath=output[0],
+                                   dumpto=output[0],
                                    verbose=verbose)
         storage.store("features", v)
         

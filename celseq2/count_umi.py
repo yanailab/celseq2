@@ -48,21 +48,18 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
             pass
 
         gene_ids = set()
+        if not aln.iv.chrom in features.chrom_vectors:
+            continue
+            
         if is_gapped_aligner:
             for aln_part in aln.cigar:
                 if aln_part.type != 'M':
                     continue
-                # for _, gene_id in features[aln_part.ref_iv].steps():
-                #     gene_ids |= gene_id
-                for iv in aln_part.ref_iv:
-                    try:
-                        for _, gene_id in features[iv].steps():
-                            gene_ids |= gene_id
-                    except KeyError:
-                        continue
-        # else:
-        #     for _, gene_id in features[aln.iv].steps():
-        #         gene_ids |= gene_id
+                for _, gene_id in features[aln_part.ref_iv].steps():
+                    gene_ids |= gene_id
+        else:
+            for _, gene_id in features[aln.iv].steps():
+                gene_ids |= gene_id
         ## union model        
         if len(gene_ids) == 1:
             gene_id = list(gene_ids)[0]
@@ -79,6 +76,14 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
     return(umi_vec)
 
 
+def umi_matrix(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
+              is_gapped_aligner=False, dumpto=None):
+    
+
+
+
+
+    
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--sam_fpath', type=str, metavar='FILENAME',

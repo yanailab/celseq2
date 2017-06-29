@@ -7,26 +7,23 @@ import pickle
 from celseq2.helper import print_logger
 
 def cook_anno_model(gff_fpath, feature_atrr='gene_id', feature_type='exon',
-                    stranded=True,
-                    anno_store_fpath=None, verbose=False):
+                    stranded=True, dumpto=None, verbose=False):
     features = HTSeq.GenomicArrayOfSets("auto", stranded=stranded)
     fh_gff = HTSeq.GFF_Reader(gff_fpath)
     
-    if verbose: i=0
+    i=0
     for gff in fh_gff:
         if verbose and i % 100000 == 0:
             print_logger('Processing {:,} lines of GFF...'.format(i))
-        if verbose:
-            i+=1
+        i+=1
         
-        if gff.type != feature_type:
-            continue
-
-        features[gff.iv] += gff.attr[feature_atrr].strip()
+        if gff.type == feature_type:
+            features[gff.iv] += gff.attr[feature_atrr].strip()
     
-    if anno_store_fpath:
-        with open(anno_store_fpath, 'wb') as fh:
+    if dumpto:
+        with open(dumpto, 'wb') as fh:
             pickle.dump(features, fh)
+            
     return(features)
     
     
@@ -40,7 +37,7 @@ def main():
                        help='Reserved word for feature type in GFF to be the components of \'gene\'.')
     parser.add_argument('--strandless', dest='stranded', action='store_false')
     parser.set_defaults(stranded=True)
-    parser.add_argument('--anno-store-fpath', type=str, metavar='FILENAME', default='annotation.pickle',
+    parser.add_argument('--dumpto', type=str, metavar='FILENAME', default='annotation.pickle',
                        help='File path to save cooked annotation model')
     parser.add_argument('--verbose', dest='verbose', action='store_true')
     parser.set_defaults(verbose=False)
@@ -49,7 +46,7 @@ def main():
                         feature_atrr=args.feature_atrr, 
                         feature_type=args.feature_type,
                         stranded=args.stranded,
-                        anno_store_fpath=args.anno_store_fpath, 
+                        dumpto=args.dumpto, 
                         verbose=args.verbose)
     
     
