@@ -11,22 +11,26 @@ def cook_anno_model(gff_fpath, feature_atrr='gene_id', feature_type='exon',
                     anno_store_fpath=None, verbose=False):
     features = HTSeq.GenomicArrayOfSets("auto", stranded=stranded)
     fh_gff = HTSeq.GFF_Reader(gff_fpath)
+    
     if verbose: i=0
-    for gff in fh_gff:            
-        if gff.type != feature_type:
-            continue
-        features[gff.iv] += gff.attr[feature_atrr]
+    for gff in fh_gff:
         if verbose and i % 100000 == 0:
             print_logger('Processing {:,} lines of GFF...'.format(i))
-        if verbose: i+=1
+        if verbose:
+            i+=1
+        
+        if gff.type != feature_type:
+            continue
+
+        features[gff.iv] += gff.attr[feature_atrr].strip()
     
     if anno_store_fpath:
-        pickle.dump(features, open(anno_store_fpath, 'wb'))
+        with open(anno_store_fpath, 'wb') as fh:
+            pickle.dump(features, fh)
     return(features)
     
     
 def main():
-    # gff_fpath='/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
     parser = argparse.ArgumentParser()
     parser.add_argument('--gff-file', type=str, metavar='FILENAME',
                        help='File path to GFF')

@@ -28,7 +28,8 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
     # aln_cnt = Counter()
     fh_aln = HTSeq.SAM_Reader(sam_fpath)
     if type(features) is str:
-        features = pickle.load(open(features, 'rb'))
+        with open(features, 'rb') as fh:
+            features = pickle.load(fh)
         
     i = 0
     for aln in fh_aln:
@@ -51,11 +52,17 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
             for aln_part in aln.cigar:
                 if aln_part.type != 'M':
                     continue
-                for _, gene_id in features[aln_part.ref_iv].steps():
-                    gene_ids |= gene_id
-        else:
-            for _, gene_id in features[aln.iv].steps():
-                gene_ids |= gene_id
+                # for _, gene_id in features[aln_part.ref_iv].steps():
+                #     gene_ids |= gene_id
+                for iv in aln_part.ref_iv:
+                    try:
+                        for _, gene_id in features[iv].steps():
+                            gene_ids |= gene_id
+                    except KeyError:
+                        continue
+        # else:
+        #     for _, gene_id in features[aln.iv].steps():
+        #         gene_ids |= gene_id
         ## union model        
         if len(gene_ids) == 1:
             gene_id = list(gene_ids)[0]
