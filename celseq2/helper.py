@@ -42,12 +42,12 @@ def mkfolder(dirpath):
         pass
 
 
-def resetfolder(dirpath):
+def resetfolder(dirpath, remove_only=False):
     if not os.path.isdir(dirpath):
         raise OSError('Not a directory')
     try:
         shutil.rmtree(dirpath)
-        os.makedirs(dirpath)
+        if not remove_only: os.makedirs(dirpath)
     except OSError:
         raise OSError(paste("Fail to reset folder", dirpath))
     return(None)

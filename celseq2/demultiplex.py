@@ -5,7 +5,7 @@ from collections import Counter
 import csv
 import argparse
 
-from celseq2.helper import filehandle_fastq_gz, print_logger, join_path
+from celseq2.helper import filehandle_fastq_gz, print_logger, join_path, mkfolder
 
 
 def bc_dict_seq2id(bc_index_fpath):
@@ -52,8 +52,11 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_seq2id,
     for bc_seq, bc_id in dict_bc_seq2id.items():
         bc_fhout[bc_seq] = join_path(outdir,
                                      'BC-{}-{}.fastq'.format(bc_id, bc_seq))
-    bc_fhout['UNKNOWNBC_R1'] = join_path(outdir, 'UNKNOWNBC_R1.fastq')
-    bc_fhout['UNKNOWNBC_R2'] = join_path(outdir, 'UNKNOWNBC_R2.fastq')
+    mkfolder(join_path(outdir, 'UNKNOWN'))
+    bc_fhout['UNKNOWNBC_R1'] = join_path(outdir, 'UNKNOWN',
+                                         'UNKNOWNBC_R1.fq')
+    bc_fhout['UNKNOWNBC_R2'] = join_path(outdir, 'UNKNOWN',
+                                         'UNKNOWNBC_R2.fq')
 
     for bc_seq, v in bc_fhout.items():
         bc_fhout[bc_seq] = open(v, 'w')

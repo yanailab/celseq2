@@ -1,26 +1,25 @@
 ######################################################################
-from celseq2.helper import mkfolder, join_path, base_name, is_nonempty_file, print_logger
+## Dependencies ##
+from celseq2.helper import mkfolder, join_path, base_name, is_nonempty_file, print_logger, resetfolder
 from celseq2.prepare_annotation_model import cook_anno_model
 from celseq2.count_umi import count_umi
 import pandas as pd
-
 from pytools.persistent_dict import PersistentDict
 storage = PersistentDict("mystorage")
 import glob
 
 ## Inforamtion ##
 PROJECT_NAME='celseq2_demo'
-## Project Folder layout ##
 DIR_PROJ='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
-SUBDIR_FASTQ='smallfq'
-SUBDIR_ALIGN='smallsam'
-SUBDIR_EXPR ='smallexpr'
-SUBDIR_LOG='log'
-SUBDIR_DIAG='smalldiagnose'
-SUBDIR_ANNO='annotation'
 
-SUBDIRS = [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_EXPR,
-           SUBDIR_LOG, SUBDIR_DIAG, SUBDIR_ANNO]
+## Sample Sheet ##
+SAMPLE_SHEET=''
+R1='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz'
+R2='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz'
+## CEL-seq2 Tech Setting ##
+BC_INDEX_FPATH='/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
+UMI_LENGTH=6
+BC_LENGTH=6
 
 ## Tools ##
 BOWTIE2_INDEX_PREFIX='/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
@@ -29,44 +28,84 @@ BOWTIE2='/local/apps/bowtie2/2.3.1/bowtie2'
 ## Annotations ##
 GFF='/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
 
+## Demultiplexing ##
+FASTQ_QUAL_MIN_OF_BC=10
+CUT_LENGTH=35
+## Alignment ##
+ALIGNER='bowtie2'
+
+## UMI Count ##
+ALN_QUAL_MIN=10
+
+
 ## Running Parameters ##
 num_threads=5
 verbose=True
 
+#######################
 ## Pipeline reserved ##
+#######################
+SUBDIR_FASTQ='smallfq'
+SUBDIR_ALIGN='smallsam'
+SUBDIR_EXPR ='smallexpr'
+SUBDIR_LOG='log'
+SUBDIR_DIAG='smalldiagnose'
+SUBDIR_ANNO='annotation'
+SUBDIRS = [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_EXPR,
+           SUBDIR_LOG, SUBDIR_DIAG, SUBDIR_ANNO]
+
 aln_diagnose_item = ["_unmapped", 
                      "_low_map_qual", '_multimapped', "_uniquemapped", 
                      "_no_feature", "_ambiguous", 
                      "_total"]
-## Dynamic Operations ##
-fq_names=list(map(base_name,
-                  glob.glob(join_path(DIR_PROJ,
-                                      SUBDIR_FASTQ, '*.fastq'))))
+## Dev ##
+
+is_gapped_aligner=False if ALIGNER=='bowtie2' else True
 
 #####################
 ## Snakemake rules ##
 #####################
+workdir: DIR_PROJ
+    
 rule all:
     input:
+        # Expression Matrix
         join_path(DIR_PROJ, SUBDIR_EXPR, PROJECT_NAME + '.csv'),
         join_path(DIR_PROJ, SUBDIR_EXPR, PROJECT_NAME + '.pickle'),
+        # Diagnose of alignment
         join_path(DIR_PROJ, SUBDIR_DIAG, PROJECT_NAME + '_alignment.csv')
     run:
-        if verbose:
-            print_logger('Following cells have been processed:')
-            print_logger(fq_names)
-                      
-    # params: cluster='-S /usr/bin/env/bash -wd /ifs/home/yy1533/Lab/cel-seq-pipe/qsub ' +
-    #     '-M yun.yan@nyumc.org ' +
-    #     '-m abe -j y -l h_vmem=30G -N Y_bowtie2'
-
-# ref: http://bioinformatics.mdc-berlin.de/intro2UnixandSGE/sun_grid_engine_for_beginners/how_to_submit_a_job_using_qsub.html
-
+        fq_names=list(map(base_name, 
+                          glob.glob(join_path(DIR_PROJ,
+                                              SUBDIR_FASTQ, '*.fastq'))))
+        print_logger('Following cells have been processed:')
+        print_logger(fq_names)
+                
 rule setup_dir:
     output: SUBDIRS
     run:
         for i in output:
-            mkfolder(i)
+            mkfolder(join_path(DIR_PROJ, i))
+
+## Demultiplexing ##
+rule demultiplexing:
+    input: R1, R2
+    output: dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{fq}.fastq'))
+    run:
+        outdir = join_path(DIR_PROJ, SUBDIR_FASTQ)
+        shell(
+            """
+            bc_demultiplex \
+            {R1} \
+            {R2} \
+            --bc_index {BC_INDEX_FPATH} \
+            --min-bc-quality {FASTQ_QUAL_MIN_OF_BC} \
+            --umi-length {UMI_LENGTH} \
+            --bc-length {BC_LENGTH} \
+            --cut-length {CUT_LENGTH} \
+            --out-dir  {outdir} \
+            --is-gzip \
+            """)
 
 ## Alignment ##
 rule align_bowtie2:
@@ -106,8 +145,8 @@ rule umi_matrix:
     input:
         gff=join_path(DIR_PROJ, SUBDIR_ANNO, 
                       base_name(GFF) + '.pickle'),
-        sam=expand(join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam'), 
-                   fq=fq_names)
+        sam=dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam')),
+                   
     output:
         csv=join_path(DIR_PROJ, SUBDIR_EXPR, 
                       PROJECT_NAME + '.csv'),
@@ -128,9 +167,9 @@ rule umi_matrix:
             print_logger('Counting cell {}'.format(cell))
             umi_cnt, aln_cnt = count_umi(sam_fpath=s,
                                          features=features_f,
-                                         len_umi=6,
-                                         accept_aln_qual_min=10,
-                                         is_gapped_aligner=False,
+                                         len_umi=UMI_LENGTH,
+                                         accept_aln_qual_min=ALN_QUAL_MIN,
+                                         is_gapped_aligner=is_gapped_aligner,
                                          dumpto=None)
             gnames = [x for x in umi_cnt]
             expr_dict[cell] = pd.Series([umi_cnt[x] for x in gnames],
@@ -145,3 +184,7 @@ rule umi_matrix:
         diagnose_aln.to_csv(output.diagnose[0])
         
 
+rule clean_all:
+    run:
+        for d in SUBDIRS:
+            resetfolder(join_path(DIR_PROJ, d), remove_only=True)
