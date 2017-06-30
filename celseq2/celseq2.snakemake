@@ -75,12 +75,9 @@ rule all:
         # Diagnose of alignment
         join_path(DIR_PROJ, SUBDIR_DIAG, PROJECT_NAME + '_alignment.csv')
     run:
-        fq_names=list(map(base_name, 
-                          glob.glob(join_path(DIR_PROJ,
-                                              SUBDIR_FASTQ, '*.fastq'))))
-        print_logger('Following cells have been processed:')
-        print_logger(fq_names)
-                
+        print_logger('Expression UMI matrix is saved at {}'.format(input[0]))
+
+        
 rule setup_dir:
     output: SUBDIRS
     run:

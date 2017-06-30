@@ -8,11 +8,6 @@
 #$ -l mem_token=30G
 #$ -N BC_Y
 
-# cd /ifs/home/yy1533/Lab/cel-seq-pipe/src/celseq
-
-# source activate py27
-# python --version
-
 bc_index_fpath='/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
 r1_fpath='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz'
 r2_fpath='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz'
