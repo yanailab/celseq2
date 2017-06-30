@@ -16,18 +16,35 @@ rownames_newexpr <- unlist(c(newexpr[, 1]))
 rownames_oldexpr <- unlist(c(oldexpr[, 1]))
 table(rownames_newexpr == rownames_oldexpr)
 
-## Make sure cells are same before checking values
-new_col_id <- 7
-old_col_id <- 7
+## test whether cells are same
+new_col_id <- 18
+old_col_id <- 18
 print(colnames(newexpr)[new_col_id])
 print(colnames(oldexpr)[old_col_id])
 
-## test whether genes have different UMI counts
+## test whether genes have different UMI counts for same cell
 conflict <- newexpr[, new_col_id] != oldexpr[, old_col_id]
-table(conflict)
-cbind(newexpr[conflict, c(1, new_col_id)],
-      oldexpr[conflict, c(1, old_col_id)])
+print(table(conflict))
 
 sum(newexpr[, new_col_id])
 sum(oldexpr[, old_col_id])
+
+cbind(newexpr[conflict, c(1, new_col_id)],
+      oldexpr[conflict, c(1, old_col_id)])
+
+
+## optional: check all automatically for all cells
+for (i in seq(2, ncol(newexpr), 1)){
+  cat('\n# Sample', i, '\n')
+  new_col_id <- old_col_id <- i
+  conflict <- newexpr[, new_col_id] != oldexpr[, old_col_id]
+  cat('## how much confliction?\n')
+  print(table(conflict))
+  cat('## random 2 expressed genes\n')
+  r <- sample(which(oldexpr[, i]>0), 2)
+  print(cbind(oldexpr[r, c(1, old_col_id)],  newexpr[r, new_col_id]))
+
+}
+
+
 
