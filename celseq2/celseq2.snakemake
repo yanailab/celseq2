@@ -13,7 +13,7 @@ PROJECT_NAME='celseq2_demo'
 DIR_PROJ='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
 
 ## Sample Sheet ##
-SAMPLE_SHEET=''
+# SAMPLE_SHEET=''
 R1='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz'
 R2='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz'
 ## CEL-seq2 Tech Setting ##
@@ -42,6 +42,7 @@ ALN_QUAL_MIN=0
 num_threads=5
 verbose=True
 
+
 #######################
 ## Pipeline reserved ##
 #######################
@@ -59,8 +60,6 @@ aln_diagnose_item = ["_unmapped",
                      "_no_feature", "_ambiguous", 
                      "_total"]
 ## Dev ##
-
-is_gapped_aligner=False if ALIGNER=='bowtie2' else True
 
 #####################
 ## Snakemake rules ##
@@ -167,7 +166,6 @@ rule umi_matrix:
                                          features=features_f,
                                          len_umi=UMI_LENGTH,
                                          accept_aln_qual_min=ALN_QUAL_MIN,
-                                         is_gapped_aligner=is_gapped_aligner,
                                          dumpto=None)
             gnames = [x for x in umi_cnt]
             expr_dict[cell] = pd.Series([umi_cnt[x] for x in gnames],

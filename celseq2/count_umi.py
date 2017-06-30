@@ -20,7 +20,7 @@ def _umi_seq(name, length=6):
 
 
 def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
-              is_gapped_aligner=False, dumpto=None):
+              dumpto=None):
     '''
     Single SAM + GFF => UMI (saved in Python's Counter)
     '''
@@ -54,16 +54,14 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
             aln_cnt["_no_feature"] += 1
             continue
             
-        gene_ids = set()            
-        # if is_gapped_aligner:
+        gene_ids = set()
+
         for aln_part in aln.cigar:
             if aln_part.type != 'M':
                 continue
             for _, gene_id in features[aln_part.ref_iv].steps():
                 gene_ids |= gene_id
-        # else:
-        #     for _, gene_id in features[aln.iv].steps():
-        #         gene_ids |= gene_id
+
         # union model        
         if len(gene_ids) == 1:
             gene_id = list(gene_ids)[0]
@@ -95,8 +93,8 @@ def main():
                         help='Length of UMI (default=6)')
     parser.add_argument('--aln-qual-min', type=int, metavar='N', default=10,
                         help='Acceptable min alignment quality (default=10)')
-    parser.add_argument('--is-gapped-aligner', dest='is_gapped_aligner', action='store_true')
-    parser.set_defaults(is_gapped_aligner=False)
+    # parser.add_argument('--is-gapped-aligner', dest='is_gapped_aligner', action='store_true')
+    # parser.set_defaults(is_gapped_aligner=False)
     parser.add_argument('--dumpto', type=str, metavar='FILENAME',  default=None,
                         help='File path to save umi count in pickle')
     args = parser.parse_args()
@@ -105,6 +103,5 @@ def main():
                   features=args.features, 
                   len_umi=args.umi_length,
                   accept_aln_qual_min=args.aln_qual_min,
-                  is_gapped_aligner=args.is_gapped_aligner,
                   dumpto=args.dumpto)
     
