@@ -35,7 +35,7 @@ CUT_LENGTH=35
 ALIGNER='bowtie2'
 
 ## UMI Count ##
-ALN_QUAL_MIN=10
+ALN_QUAL_MIN=0
 
 
 ## Running Parameters ##
@@ -120,7 +120,8 @@ rule align_bowtie2:
         -p {threads} \
         -x {BOWTIE2_INDEX_PREFIX} \
         -U {input} \
-        -S {output} 2>{log}
+        -S {output} 2>{log} \
+        --seed 42
         """
 
 ## HT-seq Count UMI ##
@@ -181,7 +182,7 @@ rule umi_matrix:
         diagnose_aln.to_csv(output.diagnose[0])
         
 
-rule clean_all:
+rule cleanall:
     run:
         for d in SUBDIRS:
             resetfolder(join_path(DIR_PROJ, d), remove_only=True)
