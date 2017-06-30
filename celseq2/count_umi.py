@@ -38,30 +38,33 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
         if not aln.aligned:
             aln_cnt["_unmapped"] += 1
             continue
-        if aln.aQual < accept_aln_qual_min:
-            aln_cnt["_low_map_qual"] += 1
-            continue
+        
         try:
-            if aln.optional_field( "NH" ) > 1:
+            if aln.optional_field("NH") > 1:
                 aln_cnt['_multimapped'] += 1
                 continue
         except KeyError:
             pass
+        
+        if aln.aQual < accept_aln_qual_min:
+            aln_cnt["_low_map_qual"] += 1
+            continue
 
-        gene_ids = set()
         if not aln.iv.chrom in features.chrom_vectors:
+            aln_cnt["_no_feature"] += 1
             continue
             
-        if is_gapped_aligner:
-            for aln_part in aln.cigar:
-                if aln_part.type != 'M':
-                    continue
-                for _, gene_id in features[aln_part.ref_iv].steps():
-                    gene_ids |= gene_id
-        else:
-            for _, gene_id in features[aln.iv].steps():
+        gene_ids = set()            
+        # if is_gapped_aligner:
+        for aln_part in aln.cigar:
+            if aln_part.type != 'M':
+                continue
+            for _, gene_id in features[aln_part.ref_iv].steps():
                 gene_ids |= gene_id
-        ## union model        
+        # else:
+        #     for _, gene_id in features[aln.iv].steps():
+        #         gene_ids |= gene_id
+        # union model        
         if len(gene_ids) == 1:
             gene_id = list(gene_ids)[0]
             aln_cnt["_uniquemapped"] += 1
