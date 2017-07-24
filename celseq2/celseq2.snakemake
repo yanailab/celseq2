@@ -1,6 +1,7 @@
 ######################################################################
 ## Dependencies ##
-from celseq2.helper import mkfolder, join_path, base_name, is_nonempty_file, print_logger, resetfolder
+from celseq2.helper import mkfolder, join_path, base_name, print_logger
+from celseq2.helper import is_nonempty_file, resetfolder, rmfolder
 from celseq2.prepare_annotation_model import cook_anno_model
 from celseq2.count_umi import count_umi
 import pandas as pd
@@ -18,6 +19,7 @@ R1='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz'
 R2='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz'
 ## CEL-seq2 Tech Setting ##
 BC_INDEX_FPATH='/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
+BC_IDs_DEFAULT='1-96'
 UMI_LENGTH=6
 BC_LENGTH=6
 
@@ -39,6 +41,7 @@ ALN_QUAL_MIN=0
 
 
 ## Running Parameters ##
+bc_ids_used='1,2,3,4-5'
 num_threads=5
 verbose=True
 
@@ -94,7 +97,8 @@ rule demultiplexing:
             bc_demultiplex \
             {R1} \
             {R2} \
-            --bc_index {BC_INDEX_FPATH} \
+            --bc-index {BC_INDEX_FPATH} \
+            --bc-index-used {bc_ids_used} \
             --min-bc-quality {FASTQ_QUAL_MIN_OF_BC} \
             --umi-length {UMI_LENGTH} \
             --bc-length {BC_LENGTH} \
@@ -142,16 +146,14 @@ rule umi_matrix:
     input:
         gff=join_path(DIR_PROJ, SUBDIR_ANNO, 
                       base_name(GFF) + '.pickle'),
-        sam=dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam')),
-                   
+        sam=dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam')),                  
     output:
         csv=join_path(DIR_PROJ, SUBDIR_EXPR, 
                       PROJECT_NAME + '.csv'),
         pickle=join_path(DIR_PROJ, SUBDIR_EXPR, 
                          PROJECT_NAME + '.pickle'),
         diagnose=join_path(DIR_PROJ, SUBDIR_DIAG,
-                           PROJECT_NAME + '_alignment.csv'),
-                           
+                           PROJECT_NAME + '_alignment.csv'),                          
     log:
         join_path(DIR_PROJ, SUBDIR_LOG, 'umi_matrix.log')
     run:
@@ -183,4 +185,4 @@ rule umi_matrix:
 rule cleanall:
     run:
         for d in SUBDIRS:
-            resetfolder(join_path(DIR_PROJ, d), remove_only=True)
+            rmfolder(join_path(DIR_PROJ, d))

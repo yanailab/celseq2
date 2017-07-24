@@ -8,6 +8,26 @@ import argparse
 from celseq2.helper import filehandle_fastq_gz, print_logger, join_path, mkfolder
 
 
+def str2int(s):
+    """
+    str('1-3,6,89-90,67') => [1,2,3,6,67,89,90] 
+    """
+    intervals = list(map(lambda x: x.strip().split('-'), 
+                         s.strip().split(',')))
+    out = []
+    for x in intervals:
+        try:
+            p, q = map(int, x)
+        except ValueError:
+            out += [int(x[0])]
+            continue
+        if p > q:
+            print_logger('Wrong format of setting available BC-index: {}-{}'.format(s, e))
+            raise
+        out += list(range(p, q+1))
+    return(sorted(list(set(out))))
+    
+    
 def bc_dict_seq2id(bc_index_fpath):
     """ dict[barcode_seq] = barcode_id """
     out = dict()
@@ -19,15 +39,16 @@ def bc_dict_seq2id(bc_index_fpath):
 
 
 def bc_dict_id2seq(bc_index_fpath):
+    """ dict[barcode_id] =  barcode_seq"""
     out = dict()
     with open(bc_index_fpath, 'rt') as fin:
         freader = csv.reader(fin, delimiter='\t')
         next(freader)
-        out = {row[0]: int(row[1]) for row in freader}
+        out = {int(row[0]): row[1] for row in freader}
     return(out)
 
 
-def demultiplexing(read1_fpath, read2_fpath, dict_bc_seq2id,
+def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
                    outdir,
                    len_umi=6, len_bc=6, len_tx=35, bc_qual_min=10,
                    is_gzip=True,
@@ -49,7 +70,7 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_seq2id,
     sample_counter = Counter()
 
     bc_fhout = dict()
-    for bc_seq, bc_id in dict_bc_seq2id.items():
+    for bc_id, bc_seq in dict_bc_id2seq.items():
         bc_fhout[bc_seq] = join_path(outdir,
                                      'BC-{}-{}.fastq'.format(bc_id, bc_seq))
     mkfolder(join_path(outdir, 'UNKNOWN'))
@@ -130,7 +151,7 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_seq2id,
     return(sample_counter)
 
 
-def write_demultiplexing(stats, dict_bc_seq2id, stats_fpath):
+def write_demultiplexing(stats, dict_bc_id2seq, stats_fpath):
     if stats_fpath is None:
         stats_fpath = 'demultiplexing.log'
     try:
@@ -138,9 +159,10 @@ def write_demultiplexing(stats, dict_bc_seq2id, stats_fpath):
     except Exception as e:
         raise Exception(e)
     fh_stats.write('BC\tReads(#)\tReads(%)\n')
-    for k, v in dict_bc_seq2id.items():
-        fh_stats.write('{:03d}-{}\t{:,}\t{:06.2f}\n'.format(v, k, stats[k],
-                                                            stats[k]/stats['total']*100))
+    for bc_id, bc_seq in dict_bc_id2seq.items():
+        fh_stats.write('{:03d}-{}\t{:,}\t{:06.2f}\n'.format(bc_id, bc_seq, 
+                                                            stats[bc_seq],
+                                                            stats[bc_seq]/stats['total']*100))
     fh_stats.write('{}\t{}\t{:06.2f}\n'.format('saved',
                                                stats['saved'],
                                                stats['saved']/stats['total']*100))
@@ -164,8 +186,11 @@ def main():
     # parser.add_argument('sample_sheet', type=str)
     parser.add_argument('read1_fpath', type=str)
     parser.add_argument('read2_fpath', type=str)
-    parser.add_argument('--bc_index', type=str, metavar='FILENAME',
-                        help='File path to barcode used')
+    parser.add_argument('--bc-index', type=str, metavar='FILENAME',
+                        help='File path to barcode dictionary')
+    parser.add_argument('--bc-index-used', type=str, metavar='string',
+                        default='1-96', 
+                        help='Index of used barcode IDs (default=1-96)')
     parser.add_argument('--min-bc-quality', metavar='N', type=int, default=10,
                         help='Minimal quality for barcode reads (default=10)')
     parser.add_argument('--out-dir', metavar='DIRNAME', type=str, default='.',
@@ -187,11 +212,16 @@ def main():
 
     args = parser.parse_args()
 
-    bc_dict = bc_dict_seq2id(args.bc_index)
+    bc_dict = bc_dict_id2seq(args.bc_index)
+    
+    if args.bc_index_used != '1-96':
+        bc_index_used = str2int(args.bc_index_used)
+        bc_dict = {x: bc_dict.get(x, None) for x in bc_index_used}
+    
     print_logger('Demultiplexing starts ...')
     out = demultiplexing(read1_fpath=args.read1_fpath,
                          read2_fpath=args.read2_fpath,
-                         outdir=args.out_dir, dict_bc_seq2id=bc_dict,
+                         outdir=args.out_dir, dict_bc_id2seq=bc_dict,
                          len_umi=args.umi_length,
                          len_bc=args.bc_length,
                          len_tx=args.cut_length,

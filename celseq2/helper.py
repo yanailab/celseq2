@@ -42,6 +42,11 @@ def mkfolder(dirpath):
         pass
 
 
+def rmfolder(dirpath):
+    if os.path.isdir(dirpath):
+        shutil.rmtree(dirpath)
+
+    
 def resetfolder(dirpath, remove_only=False):
     if not os.path.isdir(dirpath):
         raise OSError('Not a directory')
