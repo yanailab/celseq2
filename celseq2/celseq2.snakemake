@@ -140,13 +140,13 @@ rule align_bowtie2:
 rule cook_annotation:
     input: GFF
     output:
-        temp(join_path(DIR_PROJ, SUBDIR_ANNO,
+        anno=temp(join_path(DIR_PROJ, SUBDIR_ANNO,
                        base_name(GFF) + '.pickle'))
     run:
         v = cook_anno_model(GFF, feature_atrr='gene_id',
                             feature_type='exon',
                             stranded=True,
-                            dumpto=output[0],
+                            dumpto=output.anno,
                             verbose=verbose)
         storage.store("anno", v)
 
@@ -184,11 +184,11 @@ rule umi_matrix:
             aln_dict[cell] = pd.Series([aln_cnt[x] for x in aln_diagnose_item],
                                        index=aln_diagnose_item)
         expr_df = pd.DataFrame(expr_dict, index=all_genes).fillna(0)
-        expr_df.to_csv(output.csv[0])
-        expr_df.to_pickle(output.pickle[0])
+        expr_df.to_csv(output.csv)
+        expr_df.to_pickle(output.pickle)
 
         diagnose_aln = pd.DataFrame(aln_dict, index=aln_diagnose_item).fillna(0)
-        diagnose_aln.to_csv(output.diagnose[0])
+        diagnose_aln.to_csv(output.diagnose)
 
 
 rule cleanall:
