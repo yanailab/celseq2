@@ -5,45 +5,49 @@ from celseq2.helper import is_nonempty_file, resetfolder, rmfolder
 from celseq2.prepare_annotation_model import cook_anno_model
 from celseq2.count_umi import count_umi
 import pandas as pd
-from pytools.persistent_dict import PersistentDict
-storage = PersistentDict("mystorage")
 import glob
+from pytools.persistent_dict import PersistentDict
+
+
+if not config:
+    print_logger('Please specify configuration file\n')
+    exit(1)
 
 ## Inforamtion ##
-PROJECT_NAME='celseq2_demo'
-DIR_PROJ='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
+PROJECT_NAME=config['PROJECT_NAME']  # 'celseq2_demo'
+DIR_PROJ=config['DIR_PROJ']  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
 
 ## Sample Sheet ##
-# SAMPLE_SHEET=''
-R1='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz'
-R2='/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz'
+# SAMPLE_SHEET=config['SAMPLE_SHEET']  # ''
+R1=config['R1']  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz'
+R2=config['R2']  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz'
 ## CEL-seq2 Tech Setting ##
-BC_INDEX_FPATH='/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
-BC_IDs_DEFAULT='1-96'
-UMI_LENGTH=6
-BC_LENGTH=6
+BC_INDEX_FPATH=config['BC_INDEX_FPATH']  # '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
+BC_IDs_DEFAULT=config['BC_IDs_DEFAULT']  # '1-96'
+UMI_LENGTH=config['UMI_LENGTH']  # 6
+BC_LENGTH=config['BC_LENGTH']  # 6
 
 ## Tools ##
-BOWTIE2_INDEX_PREFIX='/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
-BOWTIE2='/local/apps/bowtie2/2.3.1/bowtie2'
+BOWTIE2_INDEX_PREFIX=config['BOWTIE2_INDEX_PREFIX']  # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
+BOWTIE2=config['BOWTIE2']  # '/local/apps/bowtie2/2.3.1/bowtie2'
 
 ## Annotations ##
-GFF='/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
+GFF=config['GFF']  # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
 
 ## Demultiplexing ##
-FASTQ_QUAL_MIN_OF_BC=10
-CUT_LENGTH=35
+FASTQ_QUAL_MIN_OF_BC=config['FASTQ_QUAL_MIN_OF_BC']  # 10
+CUT_LENGTH=config['CUT_LENGTH']  # 35
 ## Alignment ##
-ALIGNER='bowtie2'
+ALIGNER=config['ALIGNER']  # 'bowtie2'
 
 ## UMI Count ##
-ALN_QUAL_MIN=0
+ALN_QUAL_MIN=config['ALN_QUAL_MIN']  # 0
 
 
 ## Running Parameters ##
-bc_ids_used='1,2,3,4-5'
-num_threads=5
-verbose=True
+bc_ids_used=config['bc_ids_used']  # '1,2,3,4-5'
+num_threads=config['num_threads']  # 5
+verbose=config['verbose']  # True
 
 
 #######################
@@ -51,24 +55,26 @@ verbose=True
 #######################
 SUBDIR_FASTQ='smallfq'
 SUBDIR_ALIGN='smallsam'
-SUBDIR_EXPR ='smallexpr'
+SUBDIR_EXPR ='expr'
 SUBDIR_LOG='log'
 SUBDIR_DIAG='smalldiagnose'
 SUBDIR_ANNO='annotation'
 SUBDIRS = [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_EXPR,
            SUBDIR_LOG, SUBDIR_DIAG, SUBDIR_ANNO]
 
-aln_diagnose_item = ["_unmapped", 
-                     "_low_map_qual", '_multimapped', "_uniquemapped", 
-                     "_no_feature", "_ambiguous", 
+aln_diagnose_item = ["_unmapped",
+                     "_low_map_qual", '_multimapped', "_uniquemapped",
+                     "_no_feature", "_ambiguous",
                      "_total"]
 ## Dev ##
+storage = PersistentDict("mystorage")
 
 #####################
 ## Snakemake rules ##
 #####################
+
 workdir: DIR_PROJ
-    
+
 rule all:
     input:
         # Expression Matrix
@@ -79,7 +85,7 @@ rule all:
     run:
         print_logger('Expression UMI matrix is saved at {}'.format(input[0]))
 
-        
+
 rule setup_dir:
     output: SUBDIRS
     run:
@@ -89,7 +95,7 @@ rule setup_dir:
 ## Demultiplexing ##
 rule demultiplexing:
     input: R1, R2
-    output: dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{fq}.fastq'))
+    output: dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{bc}.fastq'))
     run:
         outdir = join_path(DIR_PROJ, SUBDIR_FASTQ)
         shell(
@@ -110,13 +116,13 @@ rule demultiplexing:
 ## Alignment ##
 rule align_bowtie2:
     input:
-        join_path(DIR_PROJ, SUBDIR_FASTQ, '{fq}.fastq')
+        join_path(DIR_PROJ, SUBDIR_FASTQ, '{bc}.fastq')
     output:
-        join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam')
+        join_path(DIR_PROJ, SUBDIR_ALIGN, '{bc}.sam')
     threads: num_threads
-    log: 
-        join_path(DIR_PROJ, SUBDIR_LOG, 
-                  'Align-Bowtie2_Cell-{fq}.log')
+    log:
+        join_path(DIR_PROJ, SUBDIR_LOG,
+                  'Align-Bowtie2_Cell-{bc}.log')
     shell:
         """
         {BOWTIE2} \
@@ -130,37 +136,37 @@ rule align_bowtie2:
 ## HT-seq Count UMI ##
 rule cook_annotation:
     input: GFF
-    output: 
-        temp(join_path(DIR_PROJ, SUBDIR_ANNO, 
+    output:
+        temp(join_path(DIR_PROJ, SUBDIR_ANNO,
                        base_name(GFF) + '.pickle'))
     run:
-        v = cook_anno_model(GFF, feature_atrr='gene_id', 
-                                   feature_type='exon',
-                                   stranded=True,
-                                   dumpto=output[0],
-                                   verbose=verbose)
+        v = cook_anno_model(GFF, feature_atrr='gene_id',
+                            feature_type='exon',
+                            stranded=True,
+                            dumpto=output[0],
+                            verbose=verbose)
         storage.store("anno", v)
 
-           
+
 rule umi_matrix:
     input:
-        gff=join_path(DIR_PROJ, SUBDIR_ANNO, 
+        gff=join_path(DIR_PROJ, SUBDIR_ANNO,
                       base_name(GFF) + '.pickle'),
-        sam=dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{fq}.sam')),                  
+        sam=dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{bc}.sam')),
     output:
-        csv=join_path(DIR_PROJ, SUBDIR_EXPR, 
+        csv=join_path(DIR_PROJ, SUBDIR_EXPR,
                       PROJECT_NAME + '.csv'),
-        pickle=join_path(DIR_PROJ, SUBDIR_EXPR, 
+        pickle=join_path(DIR_PROJ, SUBDIR_EXPR,
                          PROJECT_NAME + '.pickle'),
         diagnose=join_path(DIR_PROJ, SUBDIR_DIAG,
-                           PROJECT_NAME + '_alignment.csv'),                          
+                           PROJECT_NAME + '_alignment.csv'),
     log:
         join_path(DIR_PROJ, SUBDIR_LOG, 'umi_matrix.log')
     run:
         features_f = storage.fetch("anno")[0]
         all_genes = sorted(list(storage.fetch("anno")[1]))
-        expr_dict={}
-        aln_dict={}
+        expr_dict = {}
+        aln_dict = {}
         for s in input.sam:
             cell = base_name(s)
             print_logger('Counting cell {}'.format(cell))
@@ -177,10 +183,10 @@ rule umi_matrix:
         expr_df = pd.DataFrame(expr_dict, index=all_genes).fillna(0)
         expr_df.to_csv(output.csv[0])
         expr_df.to_pickle(output.pickle[0])
-        
+
         diagnose_aln = pd.DataFrame(aln_dict, index=aln_diagnose_item).fillna(0)
         diagnose_aln.to_csv(output.diagnose[0])
-        
+
 
 rule cleanall:
     run:
