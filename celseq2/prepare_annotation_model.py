@@ -30,7 +30,7 @@ def cook_anno_model(gff_fpath, feature_atrr='gene_id', feature_type='exon',
     
     if dumpto:
         with open(dumpto, 'wb') as fh:
-            pickle.dump(features, fh)        
+            pickle.dump([features, all_genes], fh)        
     return((features, all_genes))
     
     
