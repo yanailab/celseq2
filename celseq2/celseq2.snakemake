@@ -9,46 +9,49 @@ import glob
 from pytools.persistent_dict import PersistentDict
 
 
-if not config:
-    print_logger('Please specify configuration file\n')
-    exit(1)
-
 ## Inforamtion ##
-PROJECT_NAME=config['PROJECT_NAME']  # 'celseq2_demo'
-DIR_PROJ=config['DIR_PROJ']  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
+PROJECT_NAME=config.get('PROJECT_NAME', None)  # 'celseq2_demo'
+DIR_PROJ=config.get('DIR_PROJ', None)  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
 
 ## Sample Sheet ##
-# SAMPLE_SHEET=config['SAMPLE_SHEET']  # ''
-R1=config['R1']  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz'
-R2=config['R2']  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz'
+# SAMPLE_SHEET=config.get('SAMPLE_SHEET', None)  # ''
+R1=config.get('R1', None)  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz'
+R2=config.get('R2', None)  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz'
 ## CEL-seq2 Tech Setting ##
-BC_INDEX_FPATH=config['BC_INDEX_FPATH']  # '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
-BC_IDs_DEFAULT=config['BC_IDs_DEFAULT']  # '1-96'
-UMI_LENGTH=config['UMI_LENGTH']  # 6
-BC_LENGTH=config['BC_LENGTH']  # 6
+BC_INDEX_FPATH=config.get('BC_INDEX_FPATH', None)  # '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
+BC_IDs_DEFAULT=config.get('BC_IDs_DEFAULT', None)  # '1-96'
+UMI_LENGTH=config.get('UMI_LENGTH', None)  # 6
+BC_LENGTH=config.get('BC_LENGTH', None)  # 6
 
 ## Tools ##
-BOWTIE2_INDEX_PREFIX=config['BOWTIE2_INDEX_PREFIX']  # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
-BOWTIE2=config['BOWTIE2']  # '/local/apps/bowtie2/2.3.1/bowtie2'
+BOWTIE2_INDEX_PREFIX=config.get('BOWTIE2_INDEX_PREFIX', None)  # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
+BOWTIE2=config.get('BOWTIE2', None)  # '/local/apps/bowtie2/2.3.1/bowtie2'
 
 ## Annotations ##
-GFF=config['GFF']  # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
+GFF=config.get('GFF', None)  # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
 
 ## Demultiplexing ##
-FASTQ_QUAL_MIN_OF_BC=config['FASTQ_QUAL_MIN_OF_BC']  # 10
-CUT_LENGTH=config['CUT_LENGTH']  # 35
+FASTQ_QUAL_MIN_OF_BC=config.get('FASTQ_QUAL_MIN_OF_BC', None)  # 10
+CUT_LENGTH=config.get('CUT_LENGTH', None)  # 35
 ## Alignment ##
-ALIGNER=config['ALIGNER']  # 'bowtie2'
+ALIGNER=config.get('ALIGNER', None)  # 'bowtie2'
 
 ## UMI Count ##
-ALN_QUAL_MIN=config['ALN_QUAL_MIN']  # 0
+ALN_QUAL_MIN=config.get('ALN_QUAL_MIN', None)  # 0
 
 
 ## Running Parameters ##
-bc_ids_used=config['bc_ids_used']  # '1,2,3,4-5'
-num_threads=config['num_threads']  # 5
-verbose=config['verbose']  # True
+bc_ids_used=config.get('bc_ids_used', None)  # '1,2,3,4-5'
+num_threads=config.get('num_threads', None)  # 5
+verbose=config.get('verbose', None)  # True
 
+
+if not DIR_PROJ:
+    print_logger('Please specify configuration for pipeline\n')
+    exit(1)
+if not R1 or not R2:
+    print_logger('Please specify reads file\n')
+    exit(1)
 
 #######################
 ## Pipeline reserved ##
