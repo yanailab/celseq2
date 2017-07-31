@@ -3,9 +3,8 @@ PROJECT_NAME: 'celseq2_demo'
 DIR_PROJ: '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
 
 ## Sample Sheet ##
-# SAMPLE_SHEET: ''
-R1: '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz'
-R2: '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz'
+SAMPLE_SHEET: '/ifs/home/yy1533/Lab/cel-seq-pipe/celseq2/celseq2/experiment_design.tsv'
+
 
 ## CEL-seq2 Tech Setting ##
 BC_INDEX_FPATH: '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
@@ -21,7 +20,7 @@ BOWTIE2: '/local/apps/bowtie2/2.3.1/bowtie2'
 GFF: '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
 
 ## Cell Barcodes ID
-bc_ids_used: '1,2,3,4-5'
+#bc_ids_used: '1,2,3,4-5'
 
 ## Demultiplexing ##
 FASTQ_QUAL_MIN_OF_BC: 10

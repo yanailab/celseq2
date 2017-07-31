@@ -1,22 +1,24 @@
 ######################################################################
 ## Dependencies ##
-from celseq2.helper import mkfolder, join_path, base_name, print_logger
+from celseq2.helper import mkfolder, join_path, base_name, dir_name, print_logger
 from celseq2.helper import is_nonempty_file, resetfolder, rmfolder
+from celseq2.helper import cook_sample_sheet
 from celseq2.prepare_annotation_model import cook_anno_model
 from celseq2.count_umi import count_umi
 import pandas as pd
 import glob
 from pytools.persistent_dict import PersistentDict
 
+import shutil
+import os
 
 ## Inforamtion ##
 PROJECT_NAME=config.get('PROJECT_NAME', None)  # 'celseq2_demo'
 DIR_PROJ=config.get('DIR_PROJ', None)  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
 
 ## Sample Sheet ##
-# SAMPLE_SHEET=config.get('SAMPLE_SHEET', None)  # ''
-R1=config.get('R1', None)  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz'
-R2=config.get('R2', None)  # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz'
+SAMPLE_SHEET=cook_sample_sheet(config.get('SAMPLE_SHEET', None))  # ''
+
 ## CEL-seq2 Tech Setting ##
 BC_INDEX_FPATH=config.get('BC_INDEX_FPATH', None)  # '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
 BC_IDs_DEFAULT=config.get('BC_IDs_DEFAULT', None)  # '1-96'
@@ -41,29 +43,42 @@ ALN_QUAL_MIN=config.get('ALN_QUAL_MIN', None)  # 0
 
 
 ## Running Parameters ##
-bc_ids_used=config.get('bc_ids_used', None)  # '1,2,3,4-5'
+# bc_ids_used=config.get('bc_ids_used', None)  # '1,2,3,4-5'
 num_threads=config.get('num_threads', None)  # 5
 verbose=config.get('verbose', None)  # True
+
+
+#######################
+## Pipeline reserved ##
+#######################
+item_names = list(map(lambda x: "item-" + str(x),
+                      SAMPLE_SHEET.get('ITEM_ID', None).values))
+sample_names = SAMPLE_SHEET['SAMPLE_NAME'].values
+R1 = SAMPLE_SHEET['R1'].values # expand('{r1_fpath}', r1_fpath=SAMPLE_SHEET['R1'].values)
+R2 = SAMPLE_SHEET['R2'].values # expand('{r2_fpath}', r2_fpath=SAMPLE_SHEET['R2'].values)
+bc_used = SAMPLE_SHEET['CELL_BARCODES_INDEX'].values
+
 
 
 if not DIR_PROJ:
     print_logger('Please specify configuration for pipeline\n')
     exit(1)
-if not R1 or not R2:
+if R1 is None or R2 is None:
     print_logger('Please specify reads file\n')
     exit(1)
 
-#######################
-## Pipeline reserved ##
-#######################
+SUBDIR_INPUT='input'
 SUBDIR_FASTQ='smallfq'
 SUBDIR_ALIGN='smallsam'
+SUBDIR_UMI='smallumi'
 SUBDIR_EXPR ='expr'
 SUBDIR_LOG='log'
+SUBDIR_QSUB='qsub_log'
 SUBDIR_DIAG='smalldiagnose'
 SUBDIR_ANNO='annotation'
-SUBDIRS = [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_EXPR,
-           SUBDIR_LOG, SUBDIR_DIAG, SUBDIR_ANNO]
+SUBDIRS = [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_UMI, SUBDIR_EXPR,
+           SUBDIR_LOG, SUBDIR_QSUB, SUBDIR_DIAG, SUBDIR_ANNO,
+           SUBDIR_INPUT]
 
 aln_diagnose_item = ["_unmapped",
                      "_low_map_qual", '_multimapped', "_uniquemapped",
@@ -90,51 +105,78 @@ rule all:
 
 
 rule setup_dir:
-    output: SUBDIRS
+    output: 
+        touch('.done.setup'),
+        expand(join_path(DIR_PROJ, SUBDIR_INPUT, '{itemid}', 'R1.fastq.gz'), itemid=item_names)
     run:
-        for i in output:
-            mkfolder(join_path(DIR_PROJ, i))
-
+        for dir_i in [SUBDIR_QSUB, SUBDIR_ANNO]:
+            mkfolder(join_path(DIR_PROJ, dir_i))
+        for dir_i in [SUBDIR_INPUT, SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_UMI, SUBDIR_DIAG, SUBDIR_LOG]:
+            for dir_j in item_names:
+                mkfolder(join_path(DIR_PROJ, dir_i, dir_j))
+        for dir_j in set(sample_names):
+            mkfolder(join_path(SUBDIR_EXPR, dir_j))
+            
+        for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
+            # os.symlink(itemr1, join_path(DIR_PROJ, SUBDIR_INPUT, itemid, 'R1.fastq.gz'))
+            shutil.copyfile(itemr1, join_path(DIR_PROJ, SUBDIR_INPUT, itemid, 'R1.fastq.gz'))
+            # os.symlink(itemr2, join_path(DIR_PROJ, SUBDIR_INPUT, itemid, 'R2.fastq.gz'))
+            shutil.copyfile(itemr2, join_path(DIR_PROJ, SUBDIR_INPUT, itemid, 'R2.fastq.gz'))
+            with open(join_path(DIR_PROJ, SUBDIR_INPUT, itemid, 'bc_used'), 'w') as fout:
+                fout.write(itembc)
+                        
+        
 ## Demultiplexing ##
 rule demultiplexing:
-    input: R1, R2
-    output: dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{bc}.fastq'))
+    input:
+        join_path(DIR_PROJ, SUBDIR_INPUT, '{itemid}', 'R1.fastq.gz')
+    output:
+        join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '.done_demultiplexing')
     run:
-        outdir = join_path(DIR_PROJ, SUBDIR_FASTQ)
+        itemid_dir = dir_name(input)
+        itemR1 = join_path(itemid_dir, 'R1.fastq.gz')
+        itemR2 = join_path(itemid_dir, 'R2.fastq.gz')
+        savetodir = join_path(DIR_PROJ, SUBDIR_FASTQ, base_name(itemid_dir))
+        with open(join_path(itemid_dir, 'bc_used'), 'r') as fin:
+            itembc = readline(fin).strip()
         shell(
             """
             bc_demultiplex \
-            {R1} \
-            {R2} \
+            {itemR1} \
+            {itemR2} \
             --bc-index {BC_INDEX_FPATH} \
-            --bc-index-used {bc_ids_used} \
+            --bc-index-used {itembc} \
             --min-bc-quality {FASTQ_QUAL_MIN_OF_BC} \
             --umi-length {UMI_LENGTH} \
             --bc-length {BC_LENGTH} \
             --cut-length {CUT_LENGTH} \
-            --out-dir  {outdir} \
+            --out-dir  {savetodir} \
             --is-gzip \
             """)
+        touch(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '.done_demultiplexing'))
+        
 
 ## Alignment ##
 rule align_bowtie2:
     input:
-        join_path(DIR_PROJ, SUBDIR_FASTQ, '{bc}.fastq')
+        join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '.done_demultiplexing'),
+        fq=join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq')
     output:
-        join_path(DIR_PROJ, SUBDIR_ALIGN, '{bc}.sam')
+        join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
     threads: num_threads
     log:
-        join_path(DIR_PROJ, SUBDIR_LOG,
+        join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}', 
                   'Align-Bowtie2_Cell-{bc}.log')
-    shell:
-        """
-        {BOWTIE2} \
-        -p {threads} \
-        -x {BOWTIE2_INDEX_PREFIX} \
-        -U {input} \
-        -S {output} 2>{log} \
-        --seed 42
-        """
+    run:
+        shell(
+            """
+            {BOWTIE2} \
+            -p {threads.fq} \
+            -x {BOWTIE2_INDEX_PREFIX} \
+            -U {input} \
+            -S {output} 2>{log} \
+            --seed 42
+            """)
 
 ## HT-seq Count UMI ##
 rule cook_annotation:
@@ -155,7 +197,7 @@ rule umi_matrix:
     input:
         gff=join_path(DIR_PROJ, SUBDIR_ANNO,
                       base_name(GFF) + '.pickle'),
-        sam=dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{bc}.sam')),
+        sam=dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{item_name}', '{bc}.sam')),
     output:
         csv=join_path(DIR_PROJ, SUBDIR_EXPR,
                       PROJECT_NAME + '.csv'),
@@ -195,3 +237,4 @@ rule cleanall:
     run:
         for d in SUBDIRS:
             rmfolder(join_path(DIR_PROJ, d))
+        os.remove('.done.setup')

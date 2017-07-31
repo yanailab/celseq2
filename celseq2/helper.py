@@ -9,6 +9,7 @@ import time
 import shutil
 import subprocess
 import sys
+import pandas as pd
 # import yaml
 
 
@@ -87,6 +88,10 @@ def base_name(fpath, ext=None):
     return(bs)
 
 
+def dir_name(fpath):
+    return(os.path.dirname(fpath))
+
+
 def popen_communicate(cmd):
     try:
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
@@ -106,6 +111,14 @@ def filehandle_fastq_gz(fpath):
     return(fh)
 
 
+def cook_sample_sheet(fpath, sep='\t'):
+    sample_sheet = pd.read_csv(fpath, sep=sep)
+    assert ('SAMPLE_NAME' in sample_sheet.columns), "Feed correct sample sheet."
+    sample_sheet.sort_values(['SAMPLE_NAME'], inplace=True)
+    sample_sheet['ITEM_ID'] = sample_sheet.index + 1
+    return(sample_sheet)
+    
+    
 def main():
     print_logger("This is function: helper.py")
 
