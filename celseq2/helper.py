@@ -33,7 +33,8 @@ def ymdhms():
 
 def print_logger(msg):
     localtime = time.asctime(time.localtime(time.time()))
-    sys.stderr.write("[ {} ] {}\n".format(localtime, msg))
+    # sys.stderr.write("[ {} ] {}\n".format(localtime, msg))
+    print("[ {} ] {}\n".format(localtime, msg))
 
 
 def mkfolder(dirpath):

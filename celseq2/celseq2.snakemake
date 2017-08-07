@@ -115,7 +115,9 @@ rule all:
 
 
 rule setup_dir:
+    input: config.get('SAMPLE_SHEET')
     output:
+        touch('_done_setupdir'),
         SUBDIRS,
         expand(join_path('{subdir}', '{itemid}'),
                subdir=[SUBDIR_INPUT, SUBDIR_FASTQ, SUBDIR_ALIGN,
@@ -131,72 +133,42 @@ rule setup_dir:
         for d in output:
             mkfolder(d)
 
-rule prepare_input:
+
+# Combo-demultiplexing
+rule combo_demultiplexing:
+    input: '_done_setupdir'
     output:
-        # dynamic as 2nd solution
-        r1 = expand(join_path(SUBDIR_INPUT, '{itemid}', 'R1.fastq.gz'),
-                    itemid=item_names),
-        r2 = expand(join_path(SUBDIR_INPUT, '{itemid}', 'R2.fastq.gz'),
-                    itemid=item_names),
-        bc = expand(join_path(SUBDIR_INPUT, '{itemid}', 'bc_used.txt'),
-                    itemid=item_names),
-        flag = expand(join_path(SUBDIR_INPUT, '{itemid}', '_done_input'),
-                      itemid=item_names)
+        dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'))
+    message: 'Performing combo-demultiplexing'
     run:
+        # Demultiplx fastq one-by-one
         for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
-            itemid_dir = join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
-            os.symlink(itemr1, join_path(itemid_dir, 'R1.fastq.gz'))
-            os.symlink(itemr2, join_path(itemid_dir, 'R2.fastq.gz'))
-            with open(join_path(itemid_dir, 'bc_used.txt'), 'w') as fout:
-                fout.write(itembc)
-            touch(join_path(itemid_dir, '_done_input'))
-
-
-## Demultiplexing ##
-# rule demultiplexing:
-#     input:
-#         rules.prepare_input.flag
-#     output:
-rule demultiplexing:
-    input:
-        r1 = join_path(DIR_PROJ, SUBDIR_INPUT, '{itemid}', 'R1.fastq.gz'),
-        r2 = join_path(DIR_PROJ, SUBDIR_INPUT, '{itemid}', 'R2.fastq.gz'),
-        bc = join_path(DIR_PROJ, SUBDIR_INPUT, '{itemid}', 'bc_used.txt'),
-        flag = join_path(SUBDIR_INPUT, '{itemid}', '_done_input')
-    output:
-        # fqs = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid_bc}.fastq')),
-        fqs = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ,
-                                '{itemid}', '{bc}.fastq')),
-        flag = join_path(DIR_PROJ, SUBDIR_FASTQ,
-                         '{itemid}', '_done_demultiplex')
-    run:
-        savetodir = dir_name(input.r1)
-        with open(input.bc) as fin:
-            itembc = readline(fin).strip()
-
-        shell(
-            """
-            bc_demultiplex \
-            {input.r1} \
-            {input.r2} \
-            --bc-index {BC_INDEX_FPATH} \
-            --bc-index-used {itembc} \
-            --min-bc-quality {FASTQ_QUAL_MIN_OF_BC} \
-            --umi-length {UMI_LENGTH} \
-            --bc-length {BC_LENGTH} \
-            --cut-length {CUT_LENGTH} \
-            --out-dir  {savetodir} \
-            --is-gzip \
-            """)
-        touch(output.flag)
+            itemid_in = join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
+            os.symlink(itemr1, join_path(itemid_in, 'R1.fastq.gz'))
+            os.symlink(itemr2, join_path(itemid_in, 'R2.fastq.gz'))
+            itemid_fqs = join_path(DIR_PROJ, SUBDIR_FASTQ, itemid)
+            print_logger('Demultiplexing {}'.format(itemid))
+            shell(
+                """
+                bc_demultiplex \
+                {itemr1} \
+                {itemr2} \
+                --bc-index {BC_INDEX_FPATH} \
+                --bc-index-used {itembc} \
+                --min-bc-quality {FASTQ_QUAL_MIN_OF_BC} \
+                --umi-length {UMI_LENGTH} \
+                --bc-length {BC_LENGTH} \
+                --cut-length {CUT_LENGTH} \
+                --out-dir  {itemid_fqs} \
+                --is-gzip \
+                """)
+        shell('touch _done_combodemultiplex')
 
 
 ## Alignment ##
 rule align_bowtie2:
     input:
         fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
-        flag = join_path(DIR_PROJ, SUBDIR_FASTQ,
-                         '{itemid}', '_done_demultiplex')
     output:
         sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam')
     threads: num_threads
@@ -219,28 +191,34 @@ rule align_bowtie2:
 rule cook_annotation:
     input: GFF
     output:
-        anno = temp(join_path(DIR_PROJ, SUBDIR_ANNO,
-                              base_name(GFF) + '.pickle'))
+        anno = join_path(DIR_PROJ, SUBDIR_ANNO,
+                         base_name(GFF) + '.pickle'),
+        flag = touch('_done_annotation'),
+    message: 'Cooking Annotation'
     run:
-        v = cook_anno_model(GFF, feature_atrr='gene_id',
+        _ = cook_anno_model(GFF, feature_atrr='gene_id',
                             feature_type='exon',
                             stranded=True,
                             dumpto=output.anno,
                             verbose=verbose)
-        storage.store("anno", v)
+
+        # storage.store("anno", v)
 
 
 rule count_umi:
     input:
-        gff = rules.cook_annotation.output.anno,
+        gff = join_path(DIR_PROJ, SUBDIR_ANNO,
+                        base_name(GFF) + '.pickle'),
         sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
     output:
         umi = join_path(DIR_PROJ, SUBDIR_UMI, '{itemid}', '{bc}.pkl'),
         aln_diag = join_path(DIR_PROJ, SUBDIR_UMI, '{itemid}', '{bc}.diag'),
     message: 'Counting {input.sam}'
     run:
-        features_f = storage.fetch("anno")[0]
-        all_genes = sorted(list(storage.fetch("anno")[1]))
+        # features_f = storage.fetch("anno")[0]
+        # all_genes = sorted(list(storage.fetch("anno")[1]))
+        features_f, all_genes = pickle.load(open(input.gff, 'rb'))
+        all_genes = sorted(all_genes)
         umi_cnt, aln_cnt = count_umi(sam_fpath=input.sam,
                                      features=features_f,
                                      len_umi=UMI_LENGTH,
@@ -293,8 +271,9 @@ rule umi_matrix:
             expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, 'expr.csv'))
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
-                                     exp_id, 'expr.h5'),
-                           format='table', append=True)
+                                     exp_id, 'expr.h5'), 'table')
+
+        shell('touch _done_umimatrix')
 
         # aln_dict = {}
         #     aln_dict[cell] = pd.Series([aln_cnt[x] for x in aln_diagnose_item],
@@ -305,7 +284,23 @@ rule umi_matrix:
 
 
 rule cleanall:
+    message: "Remove all files under {DIR_PROJ}"
     run:
         for d in SUBDIRS:
             rmfolder(join_path(DIR_PROJ, d))
-        os.remove('.done.setup')
+        shell('rm -f _done_*')
+        shell('rm -f */_done_*')
+
+rule slim:
+    input:
+        # Expression Matrix
+        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+                     expid=list(set(sample_list))),
+        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+                     expid=list(set(sample_list))),
+    message: "Remove files except expression results."
+    run:
+        for d in [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_INPUT]:
+            rmfolder(join_path(DIR_PROJ, d))
+        shell('rm -f _done_*')
+        shell('rm -f */_done_*')
