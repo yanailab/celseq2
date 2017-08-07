@@ -1,0 +1,5 @@
+SAMPLE_NAME	CELL_BARCODES_INDEX	R1	R2
+E1	1-6	/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_001.fastq.gz	/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_001.fastq.gz
+E2	1-10	/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S2_L001_R1_001.fastq.gz	/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S2_L001_R2_001.fastq.gz
+E2	7-9,10	/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S2_L001_R1_002.fastq.gz	/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S2_L001_R2_002.fastq.gz
+E1	7-9,10	/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R1_002.fastq.gz	/ifs/home/yy1533/Lab/cel-seq-pipe/demo/data/7_S1_L001_R2_002.fastq.gz

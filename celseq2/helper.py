@@ -47,13 +47,14 @@ def rmfolder(dirpath):
     if os.path.isdir(dirpath):
         shutil.rmtree(dirpath)
 
-    
+
 def resetfolder(dirpath, remove_only=False):
     if not os.path.isdir(dirpath):
         raise OSError('Not a directory')
     try:
         shutil.rmtree(dirpath)
-        if not remove_only: os.makedirs(dirpath)
+        if not remove_only:
+            os.makedirs(dirpath)
     except OSError:
         raise OSError(paste("Fail to reset folder", dirpath))
     return(None)
@@ -67,10 +68,12 @@ def is_nonempty_file(fpath, verbose=False):
             except OSError:
                 return(False)
         else:
-            if verbose: print_logger(paste(fpath, "is not a legal file"))
+            if verbose:
+                print_logger(paste(fpath, "is not a legal file"))
             return(False)
     else:
-        if verbose: print_logger(paste(fpath, " does not exist or not-accessed"))
+        if verbose:
+            print_logger(paste(fpath, " does not exist or not-accessed"))
         return(False)
 
 
@@ -106,19 +109,21 @@ def popen_communicate(cmd):
 def filehandle_fastq_gz(fpath):
     # pout = popen_communicate('zcat {}'.format(fpath))
     # fh = io.BytesIO(pout)
-    p = subprocess.Popen('gunzip -c {}'.format(fpath), shell=True, stdout=subprocess.PIPE)
+    p = subprocess.Popen('gunzip -c {}'.format(fpath),
+                         shell=True, stdout=subprocess.PIPE)
     fh = io.TextIOWrapper(p.stdout, encoding='ascii')
     return(fh)
 
 
 def cook_sample_sheet(fpath, sep='\t'):
     sample_sheet = pd.read_csv(fpath, sep=sep)
-    assert ('SAMPLE_NAME' in sample_sheet.columns), "Feed correct sample sheet."
+    assert('SAMPLE_NAME' in sample_sheet.columns), "Feed correct sample sheet."
     sample_sheet.sort_values(['SAMPLE_NAME'], inplace=True)
-    sample_sheet['ITEM_ID'] = sample_sheet.index + 1
+    sample_sheet.index = list(map(lambda x: 'item-' + str(x),
+                                  sample_sheet.index + 1))
     return(sample_sheet)
-    
-    
+
+
 def main():
     print_logger("This is function: helper.py")
 
