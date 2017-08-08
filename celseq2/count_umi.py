@@ -11,9 +11,9 @@ from collections import defaultdict, Counter
 
 
 def _umi_seq(name, length=6):
-    ## BC-TCTGAG_UMI-CGTTAC => CGTTAC
+    # BC-TCTGAG_UMI-CGTTAC => CGTTAC
     try:
-        out = name.split('_')[1][4:4+length]
+        out = name.split('_')[1][4:4 + length]
     except Exception as e:
         raise(e)
     return(out)
@@ -30,7 +30,7 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
     if type(features) is str:
         with open(features, 'rb') as fh:
             features = pickle.load(fh)
-        
+
     i = 0
     for aln in fh_aln:
         aln_cnt["_total"] += 1
@@ -38,22 +38,22 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
         if not aln.aligned:
             aln_cnt["_unmapped"] += 1
             continue
-        
+
         try:
             if aln.optional_field("NH") > 1:
                 aln_cnt['_multimapped'] += 1
                 continue
         except KeyError:
             pass
-        
+
         if aln.aQual < accept_aln_qual_min:
             aln_cnt["_low_map_qual"] += 1
             continue
 
-        if not aln.iv.chrom in features.chrom_vectors:
+        if not (aln.iv.chrom in features.chrom_vectors):
             aln_cnt["_no_feature"] += 1
             continue
-            
+
         gene_ids = set()
 
         for aln_part in aln.cigar:
@@ -62,7 +62,7 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
             for _, gene_id in features[aln_part.ref_iv].steps():
                 gene_ids |= gene_id
 
-        # union model        
+        # union model
         if len(gene_ids) == 1:
             gene_id = list(gene_ids)[0]
             aln_cnt["_uniquemapped"] += 1
@@ -71,37 +71,40 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
         elif len(gene_ids) == 0:
             aln_cnt["_no_feature"] += 1
         else:
-            aln_cnt["_ambiguous"] += 1 
-    umi_vec = Counter({x : len(umi_cnt.get(x, set())) for x in umi_cnt})
+            aln_cnt["_ambiguous"] += 1
+    umi_vec = Counter({x: len(umi_cnt.get(x, set())) for x in umi_cnt})
     if dumpto:
         pickle.dump(umi_vec, open(dumpto, 'wb'))
-    return((umi_vec, aln_cnt))
+    return((umi_vec, umi_cnt, aln_cnt))
 
+
+def _flatten_umi_set(umi_set):
+    umi_vec = Counter({x: len(umi_set.get(x, set())) for x in umi_set})
+    return(umi_vec)
 
 # def umi_matrix(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
 #               is_gapped_aligner=False, dumpto=None):
 #     pass
-    
-    
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--sam_fpath', type=str, metavar='FILENAME',
                         help='File path to SAM file')
     parser.add_argument('--features', metavar='FILENAME.pickle|Counter',
                         help='Either file path (pickle format only) or Python object in counter')
-    parser.add_argument('--umi-length', type=int, metavar='N',  default=6,
+    parser.add_argument('--umi-length', type=int, metavar='N', default=6,
                         help='Length of UMI (default=6)')
     parser.add_argument('--aln-qual-min', type=int, metavar='N', default=10,
                         help='Acceptable min alignment quality (default=10)')
     # parser.add_argument('--is-gapped-aligner', dest='is_gapped_aligner', action='store_true')
     # parser.set_defaults(is_gapped_aligner=False)
-    parser.add_argument('--dumpto', type=str, metavar='FILENAME',  default=None,
+    parser.add_argument('--dumpto', type=str, metavar='FILENAME', default=None,
                         help='File path to save umi count in pickle')
     args = parser.parse_args()
-    
-    _ = count_umi(sam_fpath=args.sam_fpath, 
-                  features=args.features, 
+
+    _ = count_umi(sam_fpath=args.sam_fpath,
+                  features=args.features,
                   len_umi=args.umi_length,
                   accept_aln_qual_min=args.aln_qual_min,
                   dumpto=args.dumpto)
-    
