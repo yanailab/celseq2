@@ -116,7 +116,7 @@ def filehandle_fastq_gz(fpath):
     return(fh)
 
 
-def cook_sample_sheet(fpath, sep='\t'):
+def cook_sample_sheet(fpath, sep='\s+'):
     sample_sheet = pd.read_csv(fpath, sep=sep)
     assert('SAMPLE_NAME' in sample_sheet.columns), "Feed correct sample sheet."
     sample_sheet.sort_values(['SAMPLE_NAME'], inplace=True)
