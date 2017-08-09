@@ -116,10 +116,10 @@ rule all:
                                     '{expid}', '{itemid}', 'expr.h5'), zip,
                           expid=sample_list, itemid=item_names),
         # Diagnose of demultiplexing
-        demultiplexing = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
-                                         '{itemid}', 'demultiplexing.log'),
-                                itemid=item_names),
-        # Diagnose of alignment
+        # demultiplexing = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
+        #                                  '{itemid}', 'demultiplexing.log'),
+        #                         itemid=item_names),
+        # # Diagnose of alignment
         alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
                                     '{itemid}', 'alignment_diagnose.csv'),
                           itemid=item_names),
@@ -153,7 +153,7 @@ rule setup_dir:
 rule combo_demultiplexing:
     input: '_done_setupdir'
     output:
-        dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'))
+        dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq')),
     message: 'Performing combo-demultiplexing'
     run:
         # Demultiplx fastq one-by-one
@@ -217,7 +217,7 @@ rule cook_annotation:
         flag=touch('_done_annotation'),
     message: 'Cooking Annotation'
     run:
-        _=cook_anno_model(GFF, feature_atrr='gene_id',
+        _ = cook_anno_model(GFF, feature_atrr='gene_id',
                             feature_type='exon',
                             stranded=True,
                             dumpto=output.anno,
