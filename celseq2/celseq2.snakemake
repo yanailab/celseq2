@@ -4,11 +4,11 @@ from celseq2.helper import mkfolder, join_path, base_name, dir_name, print_logge
 from celseq2.helper import is_nonempty_file, resetfolder, rmfolder
 from celseq2.helper import cook_sample_sheet
 from celseq2.prepare_annotation_model import cook_anno_model
-from celseq2.count_umi import count_umi
+from celseq2.count_umi import count_umi, _flatten_umi_set
 import pandas as pd
 import glob
 import pickle
-from collections import Counter
+from collections import Counter, defaultdict
 
 import shutil
 import os
@@ -101,6 +101,7 @@ aln_diagnose_item = ["_unmapped",
 workdir: DIR_PROJ
 
 rule all:
+    message: 'Finished'
     input:
         # Expression Matrix per experiment/sample/plate
         csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
@@ -229,79 +230,147 @@ rule count_umi:
                         base_name(GFF) + '.pickle'),
         sam=join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
     output:
-        umi=join_path(DIR_PROJ, SUBDIR_UMI_CNT, '{itemid}', '{bc}_umi.pkl'),
+        umicnt=join_path(DIR_PROJ, SUBDIR_UMI_CNT, '{itemid}', '{bc}_umicnt.pkl'),
         umiset=join_path(DIR_PROJ, SUBDIR_UMI_SET, '{itemid}', '{bc}_umiset.pkl'),
         aln_diag=join_path(DIR_PROJ, SUBDIR_DIAG, '{itemid}', '{bc}_aln.pkl'),
     message: 'Counting {input.sam}'
     run:
-        features_f, all_genes=pickle.load(open(input.gff, 'rb'))
-        all_genes=sorted(all_genes)
+        features_f, all_genes = pickle.load(open(input.gff, 'rb'))
+        all_genes = sorted(all_genes)
         umi_cnt, umi_set, aln_cnt=count_umi(sam_fpath=input.sam,
                                      features=features_f,
                                      len_umi=UMI_LENGTH,
                                      accept_aln_qual_min=ALN_QUAL_MIN,
                                      dumpto=None)
-        pickle.dump(umi_cnt, open(output.umi, 'wb'))
+        pickle.dump(umi_cnt, open(output.umicnt, 'wb'))
         pickle.dump(umi_set, open(output.umiset, 'wb'))
         pickle.dump(aln_cnt, open(output.aln_diag, 'wb'))
 
 
-## to-do
-# - regular umi-count using *_umi.pkl -> assess technical replicates/lanes per plate
-# - merge umi-count using *_umiset.pkl -> correct umi count per experiment/plate
-rule umi_matrix:
+# - regular umi-count using *_umicnt.pkl -> umi_count_matrix replicates/lanes per plate
+rule summarize_umi_matrix_per_item:
     input:
         gff=join_path(DIR_PROJ, SUBDIR_ANNO,
                         base_name(GFF) + '.pickle'),
-        umi=dynamic(join_path(DIR_PROJ, SUBDIR_UMI_CNT,
-                                '{itemid}', '{bc}.pkl')),
+        umicnt=dynamic(join_path(DIR_PROJ, SUBDIR_UMI_CNT,
+                                '{itemid}', '{bc}_umicnt.pkl')),
     output:
-        csv=expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+        # Expression Matrix per item/pair-of-reads/lane per sample/plate
+        csv_item = expand(join_path(DIR_PROJ, SUBDIR_EXPR,
+                                    '{expid}', '{itemid}', 'expr.csv'), zip,
+                          expid=sample_list, itemid=item_names),
+        hdf_item = expand(join_path(DIR_PROJ, SUBDIR_EXPR,
+                                    '{expid}', '{itemid}', 'expr.h5'), zip,
+                          expid=sample_list, itemid=item_names),
+    run:
+        _, all_genes = pickle.load(open(input.gff, 'rb'))
+        all_genes = sorted(all_genes)
+
+        # item -> dict(cell_bc -> Counter(umi_vector))
+        item_expr_matrix = defaultdict(dict)
+
+        for f in input.umicnt:
+            bc_name=base_name(f)  # BC-1-xxx
+            item_id=base_name(dir_name(f))  # item-1
+            item_expr_matrix[item_id][bc_name] = pickle.load(open(f, 'rb'))
+
+        for item_id, expr_dict in item_expr_matrix.items():
+            exp_id=SAMPLE_SHEET.loc[item_id, 'SAMPLE_NAME'] # E1
+
+            for bc, cnt in expr_dict.items():
+                expr_dict[bc] = pd.Series([cnt[x] for x in all_genes],
+                                          index=all_genes)
+
+            expr_df = pd.DataFrame(expr_dict, index=all_genes).fillna(0)
+            expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
+                                     exp_id, item_id, 'expr.csv'))
+            expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
+                                     exp_id, item_id, 'expr.h5'), 'table')
+
+        shell('touch _done_umimatrix_per_item')
+
+
+# - merge umi-count using *_umiset.pkl -> correct umi count per experiment/plate
+rule summarize_umi_matrix_per_experiment:
+    input:
+        gff=join_path(DIR_PROJ, SUBDIR_ANNO,
+                        base_name(GFF) + '.pickle'),
+        umiset=dynamic(join_path(DIR_PROJ, SUBDIR_UMI_SET,
+                                '{itemid}', '{bc}_umiset.pkl')),
+    output:
+        # Expression Matrix per experiment/sample/plate
+        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
                      expid=list(set(sample_list))),
-        hdf=expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
                      expid=list(set(sample_list))),
     run:
-        all_genes=sorted(list(storage.fetch("anno")[1]))
+        _, all_genes = pickle.load(open(input.gff, 'rb'))
+        all_genes = sorted(all_genes)
 
-        item_names=list(SAMPLE_SHEET.index)
-        sample_list=SAMPLE_SHEET['SAMPLE_NAME'].values
-        R1=SAMPLE_SHEET['R1'].values
-        R2=SAMPLE_SHEET['R2'].values
-        bc_used=SAMPLE_SHEET['CELL_BARCODES_INDEX'].values
+        sample_list = SAMPLE_SHEET['SAMPLE_NAME'].values
 
-        exp_expr_dict={}  # experiment -> expression_matrix
+        # experiment_id -> dict(cell_bc -> dict(gname -> set(umi)))
+        exp_expr_matrix = {}
+
         for exp_id in list(set(sample_list)):
-            exp_expr_dict[exp_id]={}
+            exp_expr_matrix[exp_id] = defaultdict(dict)
 
-        for f in input.umi:
+        for f in input.umiset:
             bc_name=base_name(f)  # BC-1-xxx
             item_id=base_name(dir_name(f))  # item-1
             exp_id=SAMPLE_SHEET.loc[item_id, 'SAMPLE_NAME']
 
-            expr_dict=exp_expr_dict.get(exp_id, {})
+            umiset_stream = pickle.load(open(f, 'rb'))
+            if len(exp_expr_matrix[exp_id][bc_name]) == 0:
+                exp_expr_matrix[exp_id][bc_name] = umiset_stream
+                continue
+            umiset_cached = exp_expr_matrix[exp_id][bc_name]
+            for x in all_genes:
+                y1 = exp_expr_matrix[exp_id][bc_name].get(x, set())
+                y2 = umiset_stream.get(x, set())
+                exp_expr_matrix[exp_id][bc_name][x] = y1 | y2
 
-            bc_umi_stream=pickle.load(open(f, 'rb'))
-            bc_umi_cached=expr_dict.get(bc_name, Counter())
-            expr_dict[bc_name]=bc_umi_cached + bc_umi_stream
 
-        for exp_id, expr_dict in exp_expr_dict.items():
+        for exp_id, expr_dict in exp_expr_matrix.items():
             for bc, cnt in expr_dict.items():
-                expr_dict[bc]=pd.Series([cnt[x] for x in all_genes],
+                cnt = _flatten_umi_set(cnt)
+                expr_dict[bc] = pd.Series([cnt[x] for x in all_genes],
                                           index=all_genes)
-            expr_df=pd.DataFrame(expr_dict, index=all_genes).fillna(0)
+            expr_df = pd.DataFrame(expr_dict, index=all_genes).fillna(0)
             expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, 'expr.csv'))
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, 'expr.h5'), 'table')
 
-        shell('touch _done_umimatrix')
+        shell('touch _done_umimatrix_per_experiment')
 
-        # aln_dict = {}
-        #     aln_dict[cell] = pd.Series([aln_cnt[x] for x in aln_diagnose_item],
-        #                                index=aln_diagnose_item)
-        # diagnose_aln = pd.DataFrame(
-        #     aln_dict, index=aln_diagnose_item).fillna(0)
-        # diagnose_aln.to_csv(output.diagnose)
+
+rule summarize_alignment_diagnose:
+    input:
+        aln_diag = dynamic(join_path(DIR_PROJ, SUBDIR_DIAG,
+                                     '{itemid}', '{bc}_aln.pkl')),
+    output:
+        # Diagnose of alignment
+        alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
+                                    '{itemid}', 'alignment_diagnose.csv'),
+                          itemid=item_names),
+    run:
+        # item_id -> dict(cell_bc -> Counter(align))
+        item_aln_mat = defaultdict(dict)
+
+        for f in input.aln_diag:
+            bc_name=base_name(f)  # BC-1-xxx
+            item_id=base_name(dir_name(f))  # item-1
+            item_aln_mat[item_id][bc_name] = pickle.load(open(f, 'rb'))
+
+        for item_id, aln_dict in item_aln_mat.items():
+            for bc, cnt in aln_dict.items():
+                aln_dict[bc] = pd.Series([cnt[x] for x in aln_diagnose_item],
+                                          index=aln_diagnose_item)
+
+            aln_df= pd.DataFrame(aln_dict, index=aln_diagnose_item).fillna(0)
+            aln_df.to_csv(join_path(DIR_PROJ, SUBDIR_DIAG,
+                                    item_id, 'alignment_diagnose.csv'))
 
 
 rule cleanall:
@@ -319,7 +388,7 @@ rule slim:
                      expid=list(set(sample_list))),
         hdf=expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
                      expid=list(set(sample_list))),
-    message: "Remove files except expression results."
+    message: "Remove files under {DIR_PROJ} except expression results."
     run:
         for d in [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_INPUT]:
             rmfolder(join_path(DIR_PROJ, d))
