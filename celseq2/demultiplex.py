@@ -5,14 +5,15 @@ from collections import Counter
 import csv
 import argparse
 
-from celseq2.helper import filehandle_fastq_gz, print_logger, join_path, mkfolder
+from celseq2.helper import filehandle_fastq_gz, print_logger
+from celseq2.helper import join_path, mkfolder
 
 
 def str2int(s):
     """
-    str('1-3,6,89-90,67') => [1,2,3,6,67,89,90] 
+    str('1-3,6,89-90,67') => [1,2,3,6,67,89,90]
     """
-    intervals = list(map(lambda x: x.strip().split('-'), 
+    intervals = list(map(lambda x: x.strip().split('-'),
                          s.strip().split(',')))
     out = []
     for x in intervals:
@@ -22,12 +23,13 @@ def str2int(s):
             out += [int(x[0])]
             continue
         if p > q:
-            print_logger('Wrong format of setting available BC-index: {}-{}'.format(s, e))
+            print_logger(
+                'Wrong format of setting available BC-index: {}-{}'.format(s, e))
             raise
-        out += list(range(p, q+1))
+        out += list(range(p, q + 1))
     return(sorted(list(set(out))))
-    
-    
+
+
 def bc_dict_seq2id(bc_index_fpath):
     """ dict[barcode_seq] = barcode_id """
     out = dict()
@@ -112,13 +114,15 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
         if len(umibc_seq) < len_umi + len_bc:
             continue
 
-        umibc_min_qual = min((ord(c)-33 for c in umibc_qualstr[:(len_umi + len_bc)]))
+        umibc_min_qual = min(
+            (ord(c) - 33 for c in umibc_qualstr[:(len_umi + len_bc)]))
         if umibc_min_qual < bc_qual_min:
             continue
 
         sample_counter['qualified'] += 1
 
-        umi, cell_bc = umibc_seq[0:len_umi], umibc_seq[len_umi:(len_umi + len_bc)]
+        umi, cell_bc = umibc_seq[0:len_umi], umibc_seq[len_umi:(
+            len_umi + len_bc)]
         try:
             fhout = bc_fhout[cell_bc]
         except KeyError:
@@ -141,8 +145,8 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
         sample_counter[cell_bc] += 1
         sample_counter['saved'] += 1
 
-
-    sample_counter['unqualified'] = sample_counter['total'] - sample_counter['qualified']
+    sample_counter['unqualified'] = sample_counter['total'] - \
+        sample_counter['qualified']
     for _, v in bc_fhout.items():
         v.close()
     fh_umibc.close()
@@ -160,28 +164,25 @@ def write_demultiplexing(stats, dict_bc_id2seq, stats_fpath):
         raise Exception(e)
     fh_stats.write('BC\tReads(#)\tReads(%)\n')
     for bc_id, bc_seq in dict_bc_id2seq.items():
-        fh_stats.write('{:03d}-{}\t{:,}\t{:06.2f}\n'.format(bc_id, bc_seq, 
-                                                            stats[bc_seq],
-                                                            stats[bc_seq]/stats['total']*100))
-    fh_stats.write('{}\t{}\t{:06.2f}\n'.format('saved',
-                                               stats['saved'],
-                                               stats['saved']/stats['total']*100))
-    fh_stats.write('{}\t{}\t{:06.2f}\n'.format('unknown',
-                                               stats['unknown'],
-                                               stats['unknown']/stats['total']*100))
-    fh_stats.write('{}\t{}\t{:06.2f}\n'.format('qualified',
-                                               stats['qualified'],
-                                               stats['qualified']/stats['total']*100))
-    fh_stats.write('{}\t{}\t{:06.2f}\n'.format('unqualified',
-                                               stats['unqualified'],
-                                               stats['unqualified']/stats['total']*100))
-    fh_stats.write('{}\t{}\t{:06.2f}\n'.format('total',
-                                               stats['total'],
-                                               stats['total']/stats['total']*100))
+        formatter = '{:03d}-{}\t{:,}\t{:06.2f}\n'
+        fh_stats.write(formatter.format(bc_id, bc_seq, stats[bc_seq],
+                                        stats[bc_seq] / stats['total'] * 100))
+
+    formatter = '{}\t{}\t{:06.2f}\n'
+    fh_stats.write(formatter.format('saved', stats['saved'],
+                                    stats['saved'] / stats['total'] * 100))
+    fh_stats.write(formatter.format('unknown', stats['unknown'],
+                                    stats['unknown'] / stats['total'] * 100))
+    fh_stats.write(formatter.format('qualified', stats['qualified'],
+                                    stats['qualified'] / stats['total'] * 100))
+    fh_stats.write(formatter.format('unqualified', stats['unqualified'],
+                                    stats['unqualified'] / stats['total'] * 100))
+    fh_stats.write(formatter.format('total', stats['total'],
+                                    stats['total'] / stats['total'] * 100))
 
 
 def main():
-    parser = argparse.ArgumentParser(description= __doc__,
+    parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     # parser.add_argument('sample_sheet', type=str)
     parser.add_argument('read1_fpath', type=str)
@@ -189,7 +190,7 @@ def main():
     parser.add_argument('--bc-index', type=str, metavar='FILENAME',
                         help='File path to barcode dictionary')
     parser.add_argument('--bc-index-used', type=str, metavar='string',
-                        default='1-96', 
+                        default='1-96',
                         help='Index of used barcode IDs (default=1-96)')
     parser.add_argument('--min-bc-quality', metavar='N', type=int, default=10,
                         help='Minimal quality for barcode reads (default=10)')
@@ -213,11 +214,11 @@ def main():
     args = parser.parse_args()
 
     bc_dict = bc_dict_id2seq(args.bc_index)
-    
+
     if args.bc_index_used != '1-96':
         bc_index_used = str2int(args.bc_index_used)
         bc_dict = {x: bc_dict.get(x, None) for x in bc_index_used}
-    
+
     print_logger('Demultiplexing starts ...')
     out = demultiplexing(read1_fpath=args.read1_fpath,
                          read2_fpath=args.read2_fpath,
