@@ -230,9 +230,9 @@ rule count_umi:
                         base_name(GFF) + '.pickle'),
         sam=join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
     output:
-        umicnt=join_path(DIR_PROJ, SUBDIR_UMI_CNT, '{itemid}', '{bc}_umicnt.pkl'),
-        umiset=join_path(DIR_PROJ, SUBDIR_UMI_SET, '{itemid}', '{bc}_umiset.pkl'),
-        aln_diag=join_path(DIR_PROJ, SUBDIR_DIAG, '{itemid}', '{bc}_aln.pkl'),
+        umicnt=join_path(DIR_PROJ, SUBDIR_UMI_CNT, '{itemid}', '{bc}.pkl'),
+        umiset=join_path(DIR_PROJ, SUBDIR_UMI_SET, '{itemid}', '{bc}.pkl'),
+        aln_diag=join_path(DIR_PROJ, SUBDIR_DIAG, '{itemid}', '{bc}.pkl'),
     message: 'Counting {input.sam}'
     run:
         features_f, all_genes = pickle.load(open(input.gff, 'rb'))
@@ -253,7 +253,7 @@ rule summarize_umi_matrix_per_item:
         gff=join_path(DIR_PROJ, SUBDIR_ANNO,
                         base_name(GFF) + '.pickle'),
         umicnt=dynamic(join_path(DIR_PROJ, SUBDIR_UMI_CNT,
-                                '{itemid}', '{bc}_umicnt.pkl')),
+                                '{itemid_i}', '{bc_i}.pkl')),
     output:
         # Expression Matrix per item/pair-of-reads/lane per sample/plate
         csv_item = expand(join_path(DIR_PROJ, SUBDIR_EXPR,
@@ -291,12 +291,25 @@ rule summarize_umi_matrix_per_item:
 
 
 # - merge umi-count using *_umiset.pkl -> correct umi count per experiment/plate
+rule umi_matrix:
+    input:
+        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+                     expid=list(set(sample_list))),
+        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+                     expid=list(set(sample_list))),
+        alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
+                                    '{itemid}', 'alignment_diagnose.csv'),
+                          itemid=item_names),
+
+    message: 'UMI matrix per experiment'
+
+
 rule summarize_umi_matrix_per_experiment:
     input:
         gff=join_path(DIR_PROJ, SUBDIR_ANNO,
                         base_name(GFF) + '.pickle'),
         umiset=dynamic(join_path(DIR_PROJ, SUBDIR_UMI_SET,
-                                '{itemid}', '{bc}_umiset.pkl')),
+                                '{itemid_ii}', '{bc_ii}.pkl')),
     output:
         # Expression Matrix per experiment/sample/plate
         csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
@@ -348,7 +361,7 @@ rule summarize_umi_matrix_per_experiment:
 rule summarize_alignment_diagnose:
     input:
         aln_diag = dynamic(join_path(DIR_PROJ, SUBDIR_DIAG,
-                                     '{itemid}', '{bc}_aln.pkl')),
+                                     '{itemid_iii}', '{bc_iii}.pkl')),
     output:
         # Diagnose of alignment
         alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
