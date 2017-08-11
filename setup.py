@@ -6,17 +6,15 @@ from os import path
 
 root = 'celseq2'
 name = 'celseq2'
-version = '0.0.1'
+version = '0.1.0'
 
 here = path.abspath(path.dirname(__file__))
 description = ('A Python Package for Processing '
                'CEL-Seq2 RNA-Seq Data.')
 
 install_requires = [
-    #'genometools>=0.2.7, <1',
-    #'pysam>=0.11.1',
-    #'jinja2>=2.9.5, <3',
-    #'pyyaml>=3.12, <4'
+    'snakemake==4',
+    'pyyaml>=3.12, <4'
 ]
 
 # do not require installation if built by ReadTheDocs
@@ -114,11 +112,11 @@ setup(
     },
 
     # data
-    # package_data={'genometools': ['data/RdBu_r_colormap.tsv']},
     package_data={
-        # 'singlecell': [
-        #     'data/templates/*/*',
-        # ]
+        'celseq2': [
+            'templates/*',  # config.yaml, etc
+            'workflow/*'  # snakemake workflow
+        ]
     },
     # data outside the package
     # data_files=[('my_data', ['data/data_file'])],
