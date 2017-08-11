@@ -114,7 +114,7 @@ setup(
     # data
     package_data={
         'celseq2': [
-            'templates/*',  # config.yaml, etc
+            'template/*',  # config.yaml, etc
             'workflow/*'  # snakemake workflow
         ]
     },
