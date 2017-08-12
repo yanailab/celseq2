@@ -395,7 +395,7 @@ rule cleanall:
         for d in SUBDIRS:
             rmfolder(join_path(DIR_PROJ, d))
         shell('rm -f _done_*')
-        shell('rm -f */_done_*')
+        shell('rm -f celseq2_job.*.sh.*')
 
 rule slim:
     input:
@@ -408,5 +408,4 @@ rule slim:
     run:
         for d in [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_INPUT]:
             rmfolder(join_path(DIR_PROJ, d))
-        shell('rm -f _done_*')
-        shell('rm -f */_done_*')
+        shell('rm -f _done_combodemultiplex')

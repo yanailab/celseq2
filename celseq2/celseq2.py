@@ -61,7 +61,6 @@ def get_argument_parser():
     cluster_group.add_argument(
         "--cluster", "-c",
         metavar="CMD",
-        default="qsub -cwd -j y",
         help=("Execute pipeline by taking tasks as jobs running in cluster, "
               "e.g. --cluster 'qsub -cwd -j y'"))
 
@@ -101,12 +100,13 @@ def main():
 
     success = snakemake(snakefile=workflow_fpath,
                         configfile=args.configfile,
+                        targets=args.target,
+
                         printshellcmds=True,
                         printreason=True,
                         timestamp=True,
                         latency_wait=1800,
-
-                        targets=args.target,
+                        jobname="celseq2_job.{rulename}.{jobid}.sh",
 
                         dryrun=args.dryrun,
                         lock=not args.nolock,
