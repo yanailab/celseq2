@@ -61,8 +61,9 @@ def get_argument_parser():
     cluster_group.add_argument(
         "--cluster", "-c",
         metavar="CMD",
-        help=("Execute pipeline by submitting jobs to cluster, e.g. "
-              "--cluster 'qsub -cwd -j y'"))
+        default="qsub -cwd -j y",
+        help=("Execute pipeline by taking tasks as jobs running in cluster, "
+              "e.g. --cluster 'qsub -cwd -j y'"))
 
     parser.add_argument("--dryrun", "-n",
                         action="store_true",
