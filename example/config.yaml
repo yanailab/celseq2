@@ -1,0 +1,35 @@
+## Inforamtion ##
+PROJECT_NAME: 'celseq2_demo_multi'
+DIR_PROJ: '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2_multi_noRepAnno2'
+
+## Sample Sheet ##
+SAMPLE_SHEET: '/ifs/home/yy1533/Lab/cel-seq-pipe/celseq2/celseq2/experiment_design.tsv'
+
+
+## CEL-seq2 Tech Setting ##
+BC_INDEX_FPATH: '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
+BC_IDs_DEFAULT: '1-96'
+UMI_LENGTH: 6
+BC_LENGTH: 6
+
+## Tools ##
+BOWTIE2_INDEX_PREFIX: '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
+BOWTIE2: '/local/apps/bowtie2/2.3.1/bowtie2'
+
+## Annotations ##
+GFF: '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
+
+## Cell Barcodes ID
+#bc_ids_used: '1,2,3,4-5'
+
+## Demultiplexing ##
+FASTQ_QUAL_MIN_OF_BC: 10
+CUT_LENGTH: 35
+## Alignment ##
+ALIGNER: 'bowtie2'
+## UMI Count ##
+ALN_QUAL_MIN: 0
+
+## Running Parameters ##
+num_threads: 5
+verbose: True
