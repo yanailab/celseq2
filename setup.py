@@ -6,7 +6,8 @@ from os import path
 
 root = 'celseq2'
 name = 'celseq2'
-version = '0.1.0'
+
+exec(open("celseq2/version.py").read())
 
 here = path.abspath(path.dirname(__file__))
 description = ('A Python Package for Processing '
@@ -61,7 +62,7 @@ class CleanCommand(Command):
 setup(
     name=name,
 
-    version=version,
+    version=__version__,
 
     description=description,
     long_description=long_description,
@@ -133,6 +134,10 @@ setup(
              'celseq2.count_umi:main'),
             ('new-configuration-file = '
              'celseq2.cook_config:main_new_config_file'),
+            ('export-workflow = '
+             'celseq2.cook_config:main_export_snakemake_workflow'),
+            ('celseq2 = '
+             'celseq2.celseq2:main'),
         ],
     },
 
