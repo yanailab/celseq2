@@ -136,6 +136,8 @@ setup(
              'celseq2.cook_config:main_new_config_file'),
             ('export-workflow = '
              'celseq2.cook_config:main_export_snakemake_workflow'),
+            ('new-experiment-table = '
+             'celseq2.cook_config:main_new_experiment_table'),
             ('celseq2 = '
              'celseq2.celseq2:main'),
         ],

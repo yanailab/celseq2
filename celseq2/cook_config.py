@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 import argparse
-from pkg_resources import resource_string, resource_filename, resource_stream
+from pkg_resources import resource_string, resource_filename
+import csv
+
+'''
+* Export config.yaml to end-users
+* Export experiment_design.tsv to end-users
+* Expose the snakemake file of entire workflow to end-users
+'''
 
 
 def get_config_file_fpath(mode='multiple'):
@@ -45,6 +52,27 @@ def main_new_config_file():
                          set as multiple.')
     args = p.parse_args()
     new_config_file(saveto=args.output_path, mode=args.mode)
+
+
+def main_new_experiment_table():
+    desc = ('Export experiment table for user to specify experiment.')
+    p = argparse.ArgumentParser(description=desc, add_help=True)
+    p.add_argument('-o', '--output-path', type=str, metavar='FILENAME',
+                   required=True,
+                   help='The output file path.')
+    args = p.parse_args()
+
+    with open(args.output_path, 'w') as fout:
+        w = csv.writer(fout, delimiter='\t')
+        w.writerow(['SAMPLE_NAME', 'CELL_BARCODES_INDEX', 'R1', 'R2'])
+        w.writerow(['wonderful_experiment1', '1,8,2-7',
+                    'path/to/x-1-r1.fastq.gz', 'path/to/x-1-r2.fastq.gz'])
+        w.writerow(['wonderful_experiment1', '1-8',
+                    'path/to/x-3-r1.fastq.gz', 'path/to/x-3-r2.fastq.gz'])
+        w.writerow(['wonderful_experiment2', '95-96,1-94,10',
+                    'path/to/y-2-r1.fastq.gz', 'path/to/y-2-r2.fastq.gz'])
+        w.writerow(['wonderful_experiment2', '1-96',
+                    'path/to/y-5-r1.fastq.gz', 'path/to/y-5-r2.fastq.gz'])
 
 
 def get_workflow_file_string(mode='multiple'):
