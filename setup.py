@@ -13,8 +13,9 @@ description = ('A Python Package for Processing '
                'CEL-Seq2 RNA-Seq Data.')
 
 install_requires = [
-    'snakemake==4',
-    'pyyaml>=3.12, <4'
+    'snakemake==4.0.0',
+    'pyyaml>=3.12, <4',
+    'HTSeq>=0.8',
 ]
 
 # do not require installation if built by ReadTheDocs
@@ -130,6 +131,8 @@ setup(
              'celseq2.prepare_annotation_model:main'),
             ('count-umi = '
              'celseq2.count_umi:main'),
+            ('new-configuration-file = '
+             'celseq2.cook_config:main_new_config_file'),
         ],
     },
 

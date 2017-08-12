@@ -35,20 +35,27 @@ def cook_anno_model(gff_fpath, feature_atrr='gene_id', feature_type='exon',
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument('--gff-file', type=str, metavar='FILENAME',
+                        required=True,
                         help='File path to GFF')
-    parser.add_argument('--feature-atrr', type=str, default='gene_id',
-                        help='Reserved word for feature_atrr in GFF to be called a \'gene\'.')
-    parser.add_argument('--feature-type', type=str, default='exon',
-                        help='Reserved word for feature type in GFF to be the components of \'gene\'.')
+    parser.add_argument('--feature-atrr', type=str,
+                        default='gene_id',
+                        help=('Reserved word for feature_atrr in GFF to be '
+                              'called a \'gene\'.'))
+    parser.add_argument('--feature-type', type=str,
+                        default='exon',
+                        help=('Reserved word for feature type in GFF to be '
+                              'the components of \'gene\'.'))
     parser.add_argument('--strandless', dest='stranded', action='store_false')
     parser.set_defaults(stranded=True)
-    parser.add_argument('--dumpto', type=str, metavar='FILENAME', default='annotation.pickle',
+    parser.add_argument('--dumpto', type=str, metavar='FILENAME',
+                        default='annotation.pickle',
                         help='File path to save cooked annotation model')
     parser.add_argument('--verbose', dest='verbose', action='store_true')
     parser.set_defaults(verbose=False)
     args = parser.parse_args()
+
     _ = cook_anno_model(gff_fpath=args.gff_file,
                         feature_atrr=args.feature_atrr,
                         feature_type=args.feature_type,

@@ -182,9 +182,7 @@ def write_demultiplexing(stats, dict_bc_id2seq, stats_fpath):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    # parser.add_argument('sample_sheet', type=str)
+    parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument('read1_fpath', type=str)
     parser.add_argument('read2_fpath', type=str)
     parser.add_argument('--bc-index', type=str, metavar='FILENAME',

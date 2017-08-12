@@ -88,14 +88,19 @@ def _flatten_umi_set(umi_set):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument('--sam_fpath', type=str, metavar='FILENAME',
+                        required=True,
                         help='File path to SAM file')
     parser.add_argument('--features', metavar='FILENAME.pickle|Counter',
-                        help='Either file path (pickle format only) or Python object in counter')
-    parser.add_argument('--umi-length', type=int, metavar='N', default=6,
+                        required=True,
+                        help=('Either file path (pickle format only) '
+                              'or Python object in counter'))
+    parser.add_argument('--umi-length', type=int, metavar='N',
+                        default=6,
                         help='Length of UMI (default=6)')
-    parser.add_argument('--aln-qual-min', type=int, metavar='N', default=10,
+    parser.add_argument('--aln-qual-min', type=int, metavar='N',
+                        default=10,
                         help='Acceptable min alignment quality (default=10)')
     # parser.add_argument('--is-gapped-aligner', dest='is_gapped_aligner', action='store_true')
     # parser.set_defaults(is_gapped_aligner=False)
