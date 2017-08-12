@@ -105,6 +105,8 @@ def main():
                         timestamp=True,
                         latency_wait=1800,
 
+                        targets=args.target,
+
                         dryrun=args.dryrun,
                         lock=not args.nolock,
                         unlock=args.unlock,
