@@ -23,9 +23,7 @@ def str2int(s):
             out += [int(x[0])]
             continue
         if p > q:
-            print_logger(
-                'Wrong format of setting available BC-index: {}-{}'.format(s, e))
-            raise
+            p, q = q, p
         out += list(range(p, q + 1))
     return(sorted(list(set(out))))
 
