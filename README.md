@@ -39,24 +39,19 @@ pip install ./
 # Quick Start
 
 Running `celseq2` pipeline is easy as 1-2-3, and here is a quick start tutorial
-based on an example. Suppose user performed CEL-Seq2 and got samples sequenced
-in the way shown as figure below.
+based on an arbitrary example. Suppose user performed CEL-Seq2 and got samples
+designed in the way shown as figure below.
 
-![experiment_example](http://i.imgur.com/kBOWcdl.png)
+![experiment_2plates_1lane](http://i.imgur.com/Vi2cD6e.png)
 
 The user had two biological samples with 8 and 96 cells respectively, which could come
-from two time-points or two tissues. To reduce the batch effect as much as
-possible, the user could possibly add different Illumina sequencing barcodes
-to the two plates (shown as blue and orange dots), mix them and subsequently get
-samples sequenced together but in three lanes (shown as red, green and purple
-rectangles). Finally, the sequencer would generate totally 6 FASTQ reads files.
+from two time-points, two tissues, or even two labs. Samples were marked with
+two different Illumina sequencing barcodes (blue and orange dots), mixed
+together, and subsequently sequenced in the same lane, which finally resulted
+to 2 FASTQ files.
 
-By running the pipeline of `celseq2`, the users would get two types of UMI count
-matrix:
-
-- UMI count matrix per biological sample. Here 2 matrices in this example.
-- UMI count matrix per lane per sample. Here 6 matrices in this example. This is
-to allow assessment on reproducibility or possible batch effect.
+By running the pipeline of `celseq2` with the them, the users would get
+UMI count matrix for each of the two plates.
 
 ## Step-1: Define Experiment Table
 
@@ -78,11 +73,7 @@ The content of experiment table in this example could be:
 | SAMPLE_NAME               | CELL_BARCODES_INDEX   | R1                        | R2                        |
 |-----------------------    |---------------------  |-------------------------  |-------------------------  |
 | wonderful_experiment1     | 1,8,2-7               | path/to/x-1-r1.fastq.gz   | path/to/x-1-r2.fastq.gz   |
-| wonderful_experiment1     | 1-8                   | path/to/x-3-r1.fastq.gz   | path/to/x-3-r2.fastq.gz   |
-| wonderful_experiment1     | 8,7,6,5,4,3,2,1       | path/to/x-2-r1.fastq.gz   | path/to/x-2-r2.fastq.gz   |
-| wonderful_experiment2     | 95-96,94-1,10         | path/to/y-2-r1.fastq.gz   | path/to/y-2-r2.fastq.gz   |
 | wonderful_experiment2     | 1-96                  | path/to/y-1-r1.fastq.gz   | path/to/y-2-r2.fastq.gz   |
-| wonderful_experiment2     | 1-96                  | path/to/y-3-r1.fastq.gz   | path/to/y-3-r2.fastq.gz   |
 
 Each row records one pair of FASTQ reads.
 
@@ -121,7 +112,7 @@ Run pipeline:
 celseq2 --configfile /path/to/wonderful_CEL-Seq2_config.yaml
 ```
 
-In addition, it is straightforward to run the pipeline of `celseq2` by
+Alternatively, it is straightforward to run the pipeline of `celseq2` by
 submitting jobs to cluster, as `celseq2` is built on top of `snakemake` which is
 a powerful workflow management framework. For example, in login node on server,
 user could run the following command to submit jobs to computing nodes. Here it
