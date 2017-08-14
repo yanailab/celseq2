@@ -60,8 +60,8 @@ to allow assessment on reproducibility or possible batch effect.
 
 ## Step-1: Define Experiment Table
 
-Run `new-experiment-table` command to initiate table file of the experiment
-design.
+Run `new-experiment-table` command to initiate table file (space/tab separated
+file) of the experiment design.
 
 ```bash
 new-experiment-table -o /path/to/wonderful_experiment_table.txt
@@ -71,7 +71,7 @@ Fill information into the generated experiment table file.
 
 :warning: Note: Column names cannot be changes at all.
 
-:warning: Note: Each element cannot contain any space.
+:warning: Note: Each slot cannot contain any space.
 
 The content of experiment table in this example could be:
 
@@ -87,15 +87,23 @@ The content of experiment table in this example could be:
 Each row records one pair of FASTQ reads.
 
 To ease the pain of manually specifying `CELL_BARCODES_INDEX`, `celseq2`
-recognizes human inputs in various way. Examples of specifications of barcodes
+recognizes human inputs in various way. Examples of specification of barcodes
 indexed from 1 to 8 that present in experiment-1 are listed and are all allowed.
 
-1. `1-8`: most straightforward way.
+1. `1-8`: the most straightforward way.
 2. `1,8,2-7` or `1,8,7-2`: combination of individual and range assignment.
 3. `8,1,7-2,6`: redundancy is tolerant.
 
 
 ## Step-2: Specify Configuration of Workflow
+
+Run `new-configuration-file` command to initiate configuration file
+(YAML format) of CEL-Seq2.
+
+```
+new-configuration-file -o /path/to/wonderful_CEL-Seq2_config.yaml
+```
+
 
 ## Step-3: Running `celseq2`
 
