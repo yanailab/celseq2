@@ -61,9 +61,9 @@ to allow assessment on reproducibility or possible batch effect.
 ## Step-1: Define Experiment Table
 
 Run `new-experiment-table` command to initiate table file (space/tab separated
-file) of the experiment design.
+file) to specify the experiment layout.
 
-```bash
+``` bash
 new-experiment-table -o /path/to/wonderful_experiment_table.txt
 ```
 
@@ -97,17 +97,41 @@ indexed from 1 to 8 that present in experiment-1 are listed and are all allowed.
 
 ## Step-2: Specify Configuration of Workflow
 
-Run `new-configuration-file` command to initiate configuration file
-(YAML format) of CEL-Seq2.
+Run `new-configuration-file` command to initiate configuration file (YAML
+format) which specify the details of CEL-Seq2 techniques the users perform.
 
-```
+``` bash
 new-configuration-file -o /path/to/wonderful_CEL-Seq2_config.yaml
 ```
 
+Example of configuration is [here](https://gitlab.com/Puriney/celseq2/blob/master/example/config.yaml).
 
-## Step-3: Running `celseq2`
 
+## Step-3: Run Pipeline of `celseq2`
+
+Examine how many tasks to be performed before actually executing the pipeline:
+
+``` bash
+celseq2 --configfile /path/to/wonderful_CEL-Seq2_config.yaml --dryrun
+```
+
+Run pipeline:
+
+``` bash
+celseq2 --configfile /path/to/wonderful_CEL-Seq2_config.yaml
+```
+
+In addition, it is straightforward to run the pipeline of `celseq2` by
+submitting jobs to cluster, as `celseq2` is built on top of `snakemake` which is
+a powerful workflow management framework. For example, in login node on server,
+user could run the following command to submit jobs to computing nodes. Here it
+submits 10 jobs in parallel with total maximum memory 50G requested.
+
+``` bash
+celseq2 --configfile /path/to/wonderful_CEL-Seq2_config.yaml \
+    -j 10 \
+    --cluster "qsub -cwd -j y -l h_vmem=50G" &
+```
 
 # Documents
-
 

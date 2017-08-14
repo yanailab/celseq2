@@ -19,9 +19,6 @@ BOWTIE2: '/local/apps/bowtie2/2.3.1/bowtie2'
 ## Annotations ##
 GFF: '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
 
-## Cell Barcodes ID
-#bc_ids_used: '1,2,3,4-5'
-
 ## Demultiplexing ##
 FASTQ_QUAL_MIN_OF_BC: 10
 CUT_LENGTH: 35
