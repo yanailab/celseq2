@@ -19,7 +19,7 @@ PROJECT_NAME = config.get('PROJECT_NAME', None)  # 'celseq2_demo'
 DIR_PROJ = config.get('DIR_PROJ', None)
 
 ## Sample Sheet ##
-SAMPLE_SHEET = cook_sample_sheet(config.get('SAMPLE_SHEET', None))  # ''
+SAMPLE_TABLE = cook_sample_sheet(config.get('SAMPLE_TABLE', None))  # ''
 
 ## CEL-seq2 Tech Setting ##
 # '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
@@ -56,13 +56,13 @@ verbose = config.get('verbose', None)  # True
 #######################
 ## Pipeline reserved ##
 #######################
-item_names = list(SAMPLE_SHEET.index)
-# expand('{r1_fpath}', r1_fpath=SAMPLE_SHEET['R1'].values)
-sample_list = SAMPLE_SHEET['SAMPLE_NAME'].values
-# expand('{r2_fpath}', r2_fpath=SAMPLE_SHEET['R2'].values)
-R1 = SAMPLE_SHEET['R1'].values
-R2 = SAMPLE_SHEET['R2'].values
-bc_used = SAMPLE_SHEET['CELL_BARCODES_INDEX'].values
+item_names = list(SAMPLE_TABLE.index)
+# expand('{r1_fpath}', r1_fpath=SAMPLE_TABLE['R1'].values)
+sample_list = SAMPLE_TABLE['SAMPLE_NAME'].values
+# expand('{r2_fpath}', r2_fpath=SAMPLE_TABLE['R2'].values)
+R1 = SAMPLE_TABLE['R1'].values
+R2 = SAMPLE_TABLE['R2'].values
+bc_used = SAMPLE_TABLE['CELL_BARCODES_INDEX'].values
 
 
 if not DIR_PROJ:
@@ -128,7 +128,7 @@ rule all:
 
 
 rule setup_dir:
-    input: config.get('SAMPLE_SHEET')
+    input: config.get('SAMPLE_TABLE')
     output:
         touch('_done_setupdir'),
         dir1=SUBDIRS,
@@ -276,7 +276,7 @@ rule summarize_umi_matrix_per_item:
             item_expr_matrix[item_id][bc_name] = pickle.load(open(f, 'rb'))
 
         for item_id, expr_dict in item_expr_matrix.items():
-            exp_id=SAMPLE_SHEET.loc[item_id, 'SAMPLE_NAME'] # E1
+            exp_id=SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME'] # E1
 
             for bc, cnt in expr_dict.items():
                 expr_dict[bc] = pd.Series([cnt[x] for x in all_genes],
@@ -322,7 +322,7 @@ rule summarize_umi_matrix_per_experiment:
         _, all_genes = pickle.load(open(input.gff, 'rb'))
         all_genes = sorted(all_genes)
 
-        sample_list = SAMPLE_SHEET['SAMPLE_NAME'].values
+        sample_list = SAMPLE_TABLE['SAMPLE_NAME'].values
 
         # experiment_id -> dict(cell_bc -> dict(gname -> set(umi)))
         exp_expr_matrix = {}
@@ -333,7 +333,7 @@ rule summarize_umi_matrix_per_experiment:
         for f in input.umiset:
             bc_name=base_name(f)  # BC-1-xxx
             item_id=base_name(dir_name(f))  # item-1
-            exp_id=SAMPLE_SHEET.loc[item_id, 'SAMPLE_NAME']
+            exp_id=SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']
 
             umiset_stream = pickle.load(open(f, 'rb'))
             if len(exp_expr_matrix[exp_id][bc_name]) == 0:

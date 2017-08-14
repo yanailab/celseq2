@@ -2,8 +2,8 @@
 PROJECT_NAME: 'celseq2_demo_multi'
 DIR_PROJ: '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2_multi_noRepAnno2'
 
-## Sample Sheet ##
-SAMPLE_SHEET: '/ifs/home/yy1533/Lab/cel-seq-pipe/celseq2/celseq2/experiment_design.tsv'
+## Sample Table ##
+SAMPLE_TABLE: '/ifs/home/yy1533/Lab/cel-seq-pipe/celseq2/celseq2/experiment_design.tsv'
 
 
 ## CEL-seq2 Tech Setting ##

@@ -1,8 +1,8 @@
 ## Inforamtion ##
 PROJECT_NAME: 'wonderful_sc'
 
-## Sample Sheet ##
-SAMPLE_SHEET: '/absolute/path/to/wonderful_experiment.tsv'
+## Sample Table ##
+SAMPLE_TABLE: '/absolute/path/to/wonderful_experiment.tsv'
 
 ## All results are saved under <DIR_PROJ>
 DIR_PROJ: '/absolute/path/to/saved/dir'
