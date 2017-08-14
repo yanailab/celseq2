@@ -42,12 +42,20 @@ def get_argument_parser():
         default=None,
         help="Targets to build. May be rules or files.")
     parser.add_argument(
-        "--configfile",
+        "--config-file",
         metavar="FILE",
         required=True,
-        help=("Specify or overwrite the config file of the workflow."
-              "Values specified in JSON or YAML format are available "
-              "in the global config dictionary inside the workflow."))
+        help=("Specify details of CEL-Seq2 and gneome information."))
+    parser.add_argument(
+        "--experiment-table",
+        metavar="FILE",
+        required=True,
+        help=("Space/Tab separated file specifying experiment design."))
+    parser.add_argument(
+        "--output-dir",
+        metavar="DIRECTORY",
+        required=True,
+        help=("All results are saved with here as root directory."))
 
     parser.add_argument(
         "--cores", "--jobs", "-j",
@@ -98,26 +106,30 @@ def main():
 
     workflow_fpath = get_workflow_file_fpath()
 
-    success = snakemake(snakefile=workflow_fpath,
-                        configfile=args.configfile,
-                        targets=args.target,
+    success = snakemake(
+        snakefile=workflow_fpath,
+        targets=args.target,
 
-                        printshellcmds=True,
-                        printreason=True,
-                        timestamp=True,
-                        latency_wait=1800,
-                        jobname="celseq2_job.{rulename}.{jobid}.sh",
+        configfile=args.config_file,
+        config={'DIR_PROJ': args.output_dir,
+                'SAMPLE_TABLE': args.experiment_table},
 
-                        dryrun=args.dryrun,
-                        lock=not args.nolock,
-                        unlock=args.unlock,
+        printshellcmds=True,
+        printreason=True,
+        timestamp=True,
+        latency_wait=1800,
+        jobname="celseq2_job.{rulename}.{jobid}.sh",
 
-                        cluster=args.cluster,
-                        cores=args.cores,
-                        nodes=args.cores,
+        dryrun=args.dryrun,
+        lock=not args.nolock,
+        unlock=args.unlock,
 
-                        force_incomplete=args.rerun_incomplete,
-                        ignore_incomplete=args.ignore_incomplete)
+        cluster=args.cluster,
+        cores=args.cores,
+        nodes=args.cores,
+
+        force_incomplete=args.rerun_incomplete,
+        ignore_incomplete=args.ignore_incomplete)
 
     sys.exit(0 if success else 1)
 
