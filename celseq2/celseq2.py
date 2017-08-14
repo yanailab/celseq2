@@ -111,8 +111,8 @@ def main():
         targets=args.target,
 
         configfile=args.config_file,
-        config={'DIR_PROJ': args.output_dir,
-                'SAMPLE_TABLE': args.experiment_table},
+        config={'output_dir': args.output_dir,
+                'experiment_table': args.experiment_table},
 
         printshellcmds=True,
         printreason=True,

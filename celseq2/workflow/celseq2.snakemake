@@ -14,12 +14,12 @@ import shutil
 import os
 
 ## Inforamtion ##
-PROJECT_NAME = config.get('PROJECT_NAME', None)  # 'celseq2_demo'
 # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
-DIR_PROJ = config.get('DIR_PROJ', None)
+DIR_PROJ = config.get('output_dir', None)
 
 ## Sample Sheet ##
-SAMPLE_TABLE = cook_sample_sheet(config.get('SAMPLE_TABLE', None))  # ''
+SAMPLE_TABLE_FPATH = config.get('experiment_table', None)
+SAMPLE_TABLE = cook_sample_sheet(SAMPLE_TABLE_FPATH)  # ''
 
 ## CEL-seq2 Tech Setting ##
 # '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
@@ -128,7 +128,7 @@ rule all:
 
 
 rule setup_dir:
-    input: config.get('SAMPLE_TABLE')
+    input: SAMPLE_TABLE_FPATH
     output:
         touch('_done_setupdir'),
         dir1=SUBDIRS,
