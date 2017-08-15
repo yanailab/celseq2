@@ -16,19 +16,21 @@ cell.
 
 # Dependencies
 
-## Install Python 3 by conda
+**Python 3**
 
-Visit <https://conda.io/miniconda.html> to find suitable scripts for your platform to install Python 3.
+Visit <https://conda.io/miniconda.html> to find suitable scripts
+for your platform to install Python 3.
 
-## Install `snakemake`
+**`snakemake`**
 
-Visit <http://snakemake.readthedocs.io/en/stable/getting_started/installation.html> to intall `snakemake`.
+Visit <http://snakemake.readthedocs.io/en/stable/getting_started/installation.html>
+to intall `snakemake`.
 
 ```
 conda install -c bioconda snakemake
 ```
 
-# Install
+# Install `celseq2`
 
 ``` bash
 git clone git@gitlab.com:Puriney/celseq2.git
@@ -57,7 +59,8 @@ UMI count matrix for each of the two plates.
 
 Run `new-configuration-file` command to initiate configuration file (YAML
 format), which specifies the details of CEL-Seq2 techniques the users perform,
-and genome annotation information, etc.
+e.g. the cell barcodes sequence dictionary, and transcriptome annotation
+information for quantifying UMIs, etc.
 
 This configuration can be shared and used more than once as long as user is
 running pipeline on same specie.
@@ -68,10 +71,12 @@ new-configuration-file -o /path/to/wonderful_CEL-Seq2_config.yaml
 
 Example of configuration is [here](https://gitlab.com/Puriney/celseq2/blob/master/example/config.yaml).
 
+Example of cell barcodes sequence dictionary is [here](https://gitlab.com/Puriney/celseq2/blob/master/example/barcodes_cel-seq_umis96.tab)
+
 ## Step-2: Define Experiment Table
 
-Run `new-experiment-table` command to initiate table file (space/tab separated
-file) to specify the experiment layout.
+Run `new-experiment-table` command to initiate table (space/tab separated
+file format) specifying the experiment layout.
 
 ``` bash
 new-experiment-table -o /path/to/wonderful_experiment_table.txt
@@ -79,16 +84,16 @@ new-experiment-table -o /path/to/wonderful_experiment_table.txt
 
 Fill information into the generated experiment table file.
 
-:warning: Note: Column names cannot be changes at all.
+:warning: Note: column names are NOT allowed to be modified.
 
-:warning: Note: Each slot cannot contain any space.
+:warning: Note: each slot cannot contain any space.
 
 The content of experiment table in this example could be:
 
 | SAMPLE_NAME               | CELL_BARCODES_INDEX   | R1                        | R2                        |
 |-----------------------    |---------------------  |-------------------------  |-------------------------  |
-| wonderful_experiment1     | 1,8,2-7               | path/to/x-1-r1.fastq.gz   | path/to/x-1-r2.fastq.gz   |
-| wonderful_experiment2     | 1-96                  | path/to/y-1-r1.fastq.gz   | path/to/y-2-r2.fastq.gz   |
+| wonderful_experiment1     | 1,8,2-7               | path/to/sampleX-lane2-R1.fastq.gz   | path/to/sampleX-lane2-R2.fastq.gz   |
+| wonderful_experiment2     | 1-96                  | path/to/sampleY-lane2-R1.fastq.gz   | path/to/sampleY-lane2-R2.fastq.gz   |
 
 Each row records one pair of FASTQ reads.
 
@@ -100,25 +105,34 @@ indexed from 1 to 8 that present in experiment-1 are listed and are all allowed.
 2. `1,8,2-7` or `1,8,7-2`: combination of individual and range assignment.
 3. `8,1,7-2,6`: redundancy is tolerant.
 
+Read [Experiment Table Specification]() for further details when more complexed
+experiment design happens.
+
 ## Step-3: Run Pipeline of `celseq2`
 
 Examine how many tasks to be performed before actually executing the pipeline:
 
 ``` bash
-celseq2 --configfile /path/to/wonderful_CEL-Seq2_config.yaml --dryrun
+celseq2 --config-file /path/to/wonderful_CEL-Seq2_config.yaml \
+    --experiment-table /path/to/wonderful_experiment_table.txt \
+    --output-dir /path/to/result_dir \
+    --dryrun
 ```
 
-Launch pipeline:
+Launch pipeline in the computing node which performs 10 tasks in parallel.
 
 ``` bash
-celseq2 --configfile /path/to/wonderful_CEL-Seq2_config.yaml
+celseq2 --config-file /path/to/wonderful_CEL-Seq2_config.yaml \
+    --experiment-table /path/to/wonderful_experiment_table.txt \
+    --output-dir /path/to/result_dir \
+    -j 10
 ```
 
 Alternatively, it is straightforward to run the pipeline of `celseq2` by
 submitting jobs to cluster, as `celseq2` is built on top of `snakemake` which is
 a powerful workflow management framework. For example, in login node on server,
 user could run the following command to submit jobs to computing nodes. Here it
-submits 10 jobs in parallel with total maximum memory 50G requested.
+submits 10 jobs in parallel with 50G of memory requested by each.
 
 ``` bash
 celseq2 --config-file /path/to/wonderful_CEL-Seq2_config.yaml \
@@ -129,19 +143,40 @@ celseq2 --config-file /path/to/wonderful_CEL-Seq2_config.yaml \
 ```
 
 # Result
+All the results are saved under <kbd>/path/to/result_dir</kbd> user specified,
+which has folder structure:
+
+```
+├── annotation
+├── expr                    # <== Here is the UMI count matrix
+├── input
+├── small_diagnose
+├── small_fq
+├── small_log
+├── small_sam
+├── small_umi_count
+└── small_umi_set
+```
+
+In particular, **UMI count matrix** for each of the experiments is
+saved in both CSV and HDF5 format and exported to <kbd>expr/</kbd> folder.
 
 ```
 expr/
-├── E1
-│   ├── expr.csv
+├── wonderful_experiment1
+│   ├── expr.csv            # <== UMI count matrix (CSV format) for blue plate
 │   ├── expr.h5
 │   └── item-1
 │       ├── expr.csv
 │       └── expr.h5
-└── E2
-    ├── expr.csv
+└── wonderful_experiment2
+    ├── expr.csv            # <== UMI count matrix (CSV format) for orange plate
     ├── expr.h5
     └── item-2
         ├── expr.csv
         └── expr.h5
 ```
+
+Results of <kbd>item-X</kbd> are useful when user has FASTQ files from multiple
+lanes. Read [Real Example]() for further details about how to specify experiment
+table and fetch results when more complexed (or real) experiment design happens.

@@ -2,7 +2,6 @@
 # coding: utf-8
 from collections import Counter
 
-import csv
 import argparse
 
 from celseq2.helper import filehandle_fastq_gz, print_logger
@@ -32,9 +31,9 @@ def bc_dict_seq2id(bc_index_fpath):
     """ dict[barcode_seq] = barcode_id """
     out = dict()
     with open(bc_index_fpath, 'rt') as fin:
-        freader = csv.reader(fin, delimiter='\t')
-        next(freader)
-        out = {row[1]: int(row[0]) for row in freader}
+        next(fin)
+        out = map(lambda row: row.strip().split(), fin)
+        out = {row[1]: int(row[0]) for row in out}
     return(out)
 
 
@@ -42,9 +41,9 @@ def bc_dict_id2seq(bc_index_fpath):
     """ dict[barcode_id] =  barcode_seq"""
     out = dict()
     with open(bc_index_fpath, 'rt') as fin:
-        freader = csv.reader(fin, delimiter='\t')
-        next(freader)
-        out = {int(row[0]): row[1] for row in freader}
+        next(fin)
+        out = map(lambda row: row.strip().split(), fin)
+        out = {int(row[0]): row[1] for row in out}
     return(out)
 
 
