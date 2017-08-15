@@ -53,7 +53,22 @@ to 2 FASTQ files.
 By running the pipeline of `celseq2` with the them, the users would get
 UMI count matrix for each of the two plates.
 
-## Step-1: Define Experiment Table
+## Step-1: Specify Configuration of Workflow
+
+Run `new-configuration-file` command to initiate configuration file (YAML
+format), which specifies the details of CEL-Seq2 techniques the users perform,
+and genome annotation information, etc.
+
+This configuration can be shared and used more than once as long as user is
+running pipeline on same specie.
+
+``` bash
+new-configuration-file -o /path/to/wonderful_CEL-Seq2_config.yaml
+```
+
+Example of configuration is [here](https://gitlab.com/Puriney/celseq2/blob/master/example/config.yaml).
+
+## Step-2: Define Experiment Table
 
 Run `new-experiment-table` command to initiate table file (space/tab separated
 file) to specify the experiment layout.
@@ -85,19 +100,6 @@ indexed from 1 to 8 that present in experiment-1 are listed and are all allowed.
 2. `1,8,2-7` or `1,8,7-2`: combination of individual and range assignment.
 3. `8,1,7-2,6`: redundancy is tolerant.
 
-
-## Step-2: Specify Configuration of Workflow
-
-Run `new-configuration-file` command to initiate configuration file (YAML
-format) which specify the details of CEL-Seq2 techniques the users perform.
-
-``` bash
-new-configuration-file -o /path/to/wonderful_CEL-Seq2_config.yaml
-```
-
-Example of configuration is [here](https://gitlab.com/Puriney/celseq2/blob/master/example/config.yaml).
-
-
 ## Step-3: Run Pipeline of `celseq2`
 
 Examine how many tasks to be performed before actually executing the pipeline:
@@ -106,7 +108,7 @@ Examine how many tasks to be performed before actually executing the pipeline:
 celseq2 --configfile /path/to/wonderful_CEL-Seq2_config.yaml --dryrun
 ```
 
-Run pipeline:
+Launch pipeline:
 
 ``` bash
 celseq2 --configfile /path/to/wonderful_CEL-Seq2_config.yaml
@@ -119,10 +121,27 @@ user could run the following command to submit jobs to computing nodes. Here it
 submits 10 jobs in parallel with total maximum memory 50G requested.
 
 ``` bash
-celseq2 --configfile /path/to/wonderful_CEL-Seq2_config.yaml \
+celseq2 --config-file /path/to/wonderful_CEL-Seq2_config.yaml \
+    --experiment-table /path/to/wonderful_experiment_table.txt \
+    --output-dir /path/to/result_dir \
     -j 10 \
     --cluster "qsub -cwd -j y -l h_vmem=50G" &
 ```
 
-# Documents
+# Result
 
+```
+expr/
+├── E1
+│   ├── expr.csv
+│   ├── expr.h5
+│   └── item-1
+│       ├── expr.csv
+│       └── expr.h5
+└── E2
+    ├── expr.csv
+    ├── expr.h5
+    └── item-2
+        ├── expr.csv
+        └── expr.h5
+```
