@@ -126,6 +126,10 @@ rule all:
                                     '{itemid}', 'alignment_diagnose.csv'),
                           itemid=item_names),
     run:
+        try:
+            shell('mv celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
+        except:
+            pass
         print_logger('Expression UMI matrix is saved at {}'.format(input.csv))
 
 
@@ -399,7 +403,7 @@ rule cleanall:
         for d in SUBDIRS:
             rmfolder(join_path(DIR_PROJ, d))
         shell('rm -f _done_*')
-        shell('rm -f celseq2_job.*.sh.*')
+        shell('rm -f {}'.format(join_path(SUBDIR_QSUB, 'celseq2_job.*.sh.*')))
 
 rule slim:
     input:
@@ -419,5 +423,5 @@ rule rerun_expr:
         for d in [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_INPUT]:
             shell('rm -rf {}'.format(join_path(DIR_PROJ, d, '*')))
         shell('rm -f _done_combodemultiplex')
-        shell('rm -f celseq2_job.*.sh.*')
+        shell('rm -f {}'.format(join_path(SUBDIR_QSUB, 'celseq2_job.*.sh.*')))
 
