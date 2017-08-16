@@ -1,14 +1,16 @@
 ######################################################################
 ## Dependencies ##
-from celseq2.helper import mkfolder, join_path, base_name, dir_name, print_logger
-from celseq2.helper import is_nonempty_file, resetfolder, rmfolder
-from celseq2.helper import cook_sample_sheet
+from celseq2.helper import join_path, base_name, dir_name, print_logger
+from celseq2.helper import rmfolder, mkfolder
+from celseq2.helper import cook_sample_sheet, popen_communicate
 from celseq2.prepare_annotation_model import cook_anno_model
 from celseq2.count_umi import count_umi, _flatten_umi_set
 import pandas as pd
 import glob
 import pickle
+
 from collections import Counter, defaultdict
+from multiprocessing import Pool, cpu_count
 
 import shutil
 import os
@@ -155,8 +157,11 @@ rule combo_demultiplexing:
     output:
         dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq')),
     message: 'Performing combo-demultiplexing'
+    threads: len(item_names)
     run:
-        # Demultiplx fastq one-by-one
+        # Demultiplx fastq in Process pool
+        print_logger('{} CPU available'.format(cpu_count()))
+        p = Pool(threads)
         for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
             itemid_in=join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
             try:
@@ -168,21 +173,22 @@ rule combo_demultiplexing:
             itemid_log=join_path(DIR_PROJ, SUBDIR_DIAG, itemid,
                                  'demultiplexing.log')
             print_logger('Demultiplexing {}'.format(itemid))
-            shell(
-                """
-                bc_demultiplex \
-                {itemr1} \
-                {itemr2} \
-                --bc-index {BC_INDEX_FPATH} \
-                --bc-index-used {itembc} \
-                --min-bc-quality {FASTQ_QUAL_MIN_OF_BC} \
-                --umi-length {UMI_LENGTH} \
-                --bc-length {BC_LENGTH} \
-                --cut-length {CUT_LENGTH} \
-                --out-dir  {itemid_fqs_dir} \
-                --is-gzip \
-                --stats-file {itemid_log}
-                """)
+            cmd = ("bc_demultiplex "
+                   "{itemr1} "
+                   "{itemr2} "
+                   "--bc-index {BC_INDEX_FPATH} "
+                   "--bc-index-used {itembc} "
+                   "--min-bc-quality {FASTQ_QUAL_MIN_OF_BC} "
+                   "--umi-length {UMI_LENGTH} "
+                   "--bc-length {BC_LENGTH} "
+                   "--cut-length {CUT_LENGTH} "
+                   "--out-dir  {itemid_fqs_dir} "
+                   "--is-gzip "
+                   "--stats-file {itemid_log} ")
+
+            p.apply_async(popen_communicate, args=(cmd, ))
+        p.close()
+        p.join()
         shell('touch _done_combodemultiplex')
 
 

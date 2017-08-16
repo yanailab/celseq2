@@ -214,7 +214,8 @@ def main():
         bc_index_used = str2int(args.bc_index_used)
         bc_dict = {x: bc_dict.get(x, None) for x in bc_index_used}
 
-    print_logger('Demultiplexing starts ...')
+    print_logger('Demultiplexing starts {}--{} ...'.format(args.read1_fpath,
+                                                           args.read2_fpath))
     out = demultiplexing(read1_fpath=args.read1_fpath,
                          read2_fpath=args.read2_fpath,
                          outdir=args.out_dir, dict_bc_id2seq=bc_dict,
@@ -226,7 +227,8 @@ def main():
                          do_bc_rev_complement=False,
                          do_tx_rev_complement=False,
                          verbose=args.verbose)
-    print_logger('Demultiplexing ends ...')
+    print_logger('Demultiplexing ends {}--{}.'.format(args.read1_fpath,
+                                                      args.read2_fpath))
     write_demultiplexing(out, bc_dict, args.stats_file)
 
 
