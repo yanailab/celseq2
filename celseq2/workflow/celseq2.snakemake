@@ -160,7 +160,6 @@ rule combo_demultiplexing:
     threads: len(item_names)
     run:
         # Demultiplx fastq in Process pool
-        print_logger('{} CPU available'.format(cpu_count()))
         p = Pool(threads)
         for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
             itemid_in=join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
@@ -173,20 +172,19 @@ rule combo_demultiplexing:
             itemid_log=join_path(DIR_PROJ, SUBDIR_DIAG, itemid,
                                  'demultiplexing.log')
             print_logger('Demultiplexing {}'.format(itemid))
-            cmd = ("bc_demultiplex "
-                   "{itemr1} "
-                   "{itemr2} "
-                   "--bc-index {BC_INDEX_FPATH} "
-                   "--bc-index-used {itembc} "
-                   "--min-bc-quality {FASTQ_QUAL_MIN_OF_BC} "
-                   "--umi-length {UMI_LENGTH} "
-                   "--bc-length {BC_LENGTH} "
-                   "--cut-length {CUT_LENGTH} "
-                   "--out-dir  {itemid_fqs_dir} "
-                   "--is-gzip "
-                   "--stats-file {itemid_log} ")
-
-            p.apply_async(popen_communicate, args=(cmd, ))
+            cmd = " ".join(["bc_demultiplex",
+                            itemr1,
+                            itemr2,
+                            "--bc-index {}".format(BC_INDEX_FPATH),
+                            "--bc-index-used {}".format(itembc),
+                            "--min-bc-quality {}".format(FASTQ_QUAL_MIN_OF_BC),
+                            "--umi-length {}".format(UMI_LENGTH),
+                            "--bc-length {}".format(BC_LENGTH),
+                            "--cut-length {}".format(CUT_LENGTH),
+                            "--out-dir  {}".format(itemid_fqs_dir),
+                            "--is-gzip ",
+                            "--stats-file {}".format(itemid_log)])
+            p.apply_async(shell, args=(cmd,))
         p.close()
         p.join()
         shell('touch _done_combodemultiplex')
@@ -413,5 +411,13 @@ rule slim:
     message: "Remove files under {DIR_PROJ} except expression results."
     run:
         for d in [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_INPUT]:
-            rmfolder(join_path(DIR_PROJ, d))
+            shell('rm -rf {}'.format(join_path(DIR_PROJ, d, '*')))
         shell('rm -f _done_combodemultiplex')
+
+rule rerun_expr:
+    run:
+        for d in [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_INPUT]:
+            shell('rm -rf {}'.format(join_path(DIR_PROJ, d, '*')))
+        shell('rm -f _done_combodemultiplex')
+        shell('rm -f celseq2_job.*.sh.*')
+
