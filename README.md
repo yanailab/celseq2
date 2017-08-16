@@ -1,7 +1,7 @@
 # Overview
 
 This is `celseq2`, a Python package for generating the UMI count matrix
-from **CEL-Seq2**[ref?] sequencing data.
+from [**CEL-Seq2**](https://doi.org/10.1186/s13059-016-0938-8) sequencing data.
 
 # What is `celseq2`, actually?
 
