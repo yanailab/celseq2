@@ -178,5 +178,6 @@ expr/
 ```
 
 Results of <kbd>item-X</kbd> are useful when user has FASTQ files from multiple
-lanes. Read [Real Example]() for further details about how to specify experiment
-table and fetch results when more complexed (or real) experiment design happens.
+lanes, or technical/biological replicates. Read [Real Example]() for further
+details about how to specify experiment table and fetch results when more
+complexed (or real) experiment design happens.
