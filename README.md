@@ -105,7 +105,7 @@ indexed from 1 to 8 that present in experiment-1 are listed and are all allowed.
 2. `1,8,2-7` or `1,8,7-2`: combination of individual and range assignment.
 3. `8,1,7-2,6`: redundancy is tolerant.
 
-Read [Experiment Table Specification]() for further details when more complexed
+Read [Experiment Table Specification](https://gitlab.com/Puriney/celseq2/wikis/Examples) for further details when more complexed
 experiment design happens.
 
 ## Step-3: Run Pipeline of `celseq2`
