@@ -178,6 +178,6 @@ expr/
 ```
 
 Results of <kbd>item-X</kbd> are useful when user has FASTQ files from multiple
-lanes, or technical/biological replicates. Read [Real Example]() for further
+lanes, or technical/biological replicates. Read [Real Example](https://gitlab.com/Puriney/celseq2/wikis/Examples) for further
 details about how to specify experiment table and fetch results when more
 complexed (or real) experiment design happens.
