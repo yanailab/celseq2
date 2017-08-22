@@ -64,7 +64,7 @@ def run_bam2sam(x):
 
 
 def dirsize_str(x):
-    xsize, _ = popen_communicate('du -sh x')
+    xsize, _ = popen_communicate('du -sh {}'.format(x)).split()
     return(str(xsize, 'utf-8'))
 
 
