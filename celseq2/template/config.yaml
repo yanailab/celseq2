@@ -22,5 +22,5 @@ ALIGNER: 'bowtie2'
 ALN_QUAL_MIN: 0
 
 ## Running Parameters ##
-num_threads: 5
+num_threads: 15
 verbose: True

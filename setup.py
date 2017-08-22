@@ -140,6 +140,8 @@ setup(
              'celseq2.cook_config:main_new_experiment_table'),
             ('celseq2 = '
              'celseq2.celseq2:main'),
+            ('celseq2-slim = '
+             'celseq2.slim:main'),
         ],
     },
 

@@ -84,6 +84,13 @@ def resetfpath(fpath):
     return(None)
 
 
+def rmfile(fpath):
+    try:
+        os.remove(fpath)
+    except FileNotFoundError:
+        pass
+
+
 def base_name(fpath, ext=None):
     bs = os.path.basename(fpath)
     if not (ext is None or ext == ""):

@@ -1,0 +1,82 @@
+from celseq2.helper import join_path, base_name, dir_name, print_logger
+from celseq2.helper import rmfolder, mkfolder
+from celseq2.helper import cook_sample_sheet, popen_communicate
+from celseq2.prepare_annotation_model import cook_anno_model
+from celseq2.count_umi import count_umi, _flatten_umi_set
+
+
+DIR_PROJ = config.get('project_dir', None)
+SUBDIR_INPUT = 'input'
+SUBDIR_FASTQ = 'small_fq'
+SUBDIR_ALIGN = 'small_sam'
+SUBDIR_UMI_CNT = 'small_umi_count'
+SUBDIR_UMI_SET = 'small_umi_set'
+SUBDIR_EXPR = 'expr'
+SUBDIR_LOG = 'small_log'
+SUBDIR_QSUB = 'qsub_log'
+SUBDIR_DIAG = 'small_diagnose'
+SUBDIR_ANNO = 'annotation'
+SUBDIRS = [SUBDIR_INPUT,
+           SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_UMI_CNT, SUBDIR_UMI_SET,
+           SUBDIR_EXPR,
+           SUBDIR_LOG, SUBDIR_QSUB, SUBDIR_DIAG, SUBDIR_ANNO
+           ]
+
+workdir: DIR_PROJ
+
+
+rule slim_setup_fq:
+    message: 'Gunzip fastq'
+    input:
+        flag='_done_UMI',
+    output:
+        fq=dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq')),
+        flag=temp('_flag_do_slim_fqgz')
+    run:
+        shell('echo')
+rule slim_setup_sam:
+    message: 'SAM2BAM'
+    input:
+        flag='_done_UMI',
+        sam=dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam')),
+    output:
+        temp('_flag_do_slim_bam')
+    run:
+        shell('echo')
+
+rule slim_do_fq_gzipped:
+    input:
+        flag='_flag_do_slim_fqgz',
+        fq=join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
+    output:
+        fqgz=join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq.gz'),
+    run:
+        shell("gzip -f '{input.fq}'")
+rule slim_do_sam2bam:
+    input:
+        flag='_flag_do_slim_bam',
+        sam=join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
+    output:
+        bam=join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.bam'),
+    run:
+        shell("samtools view -bS '{input.sam}' > '{output.bam}'")
+
+rule slim_finish_fq_gzipped:
+    input:
+        fqgz=dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ,
+                               '{itemid}', '{bc}.fastq.gz')),
+    output:
+        temp('_done_slim_fgqz')
+rule slim_finish_sam2bam:
+    input:
+        bam=dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN,
+                              '{itemid}', '{bc}.bam')),
+    output:
+        temp('_done_slim_sam2bam')
+
+rule all:
+    input:
+        '_done_slim_sam2bam', '_done_slim_fgqz'
+    message: 'Finished making project storage slim.'
+    run:
+        shell('echo Finished making project storage slim.')

@@ -102,8 +102,9 @@ aln_diagnose_item = ["_unmapped",
 
 workdir: DIR_PROJ
 
+
 rule all:
-    message: 'Finished'
+    message: 'Finished UMI matrix'
     input:
         # Expression Matrix per experiment/sample/plate
         csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
@@ -125,6 +126,8 @@ rule all:
         alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
                                     '{itemid}', 'alignment_diagnose.csv'),
                           itemid=item_names),
+    output:
+        touch('_done_UMI')
     run:
         try:
             shell('mv celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
@@ -405,7 +408,8 @@ rule cleanall:
         shell('rm -f _done_*')
         shell('rm -f {}'.format(join_path(SUBDIR_QSUB, 'celseq2_job.*.sh.*')))
 
-rule slim:
+
+rule clean_FQ_SAM:
     input:
         # Expression Matrix
         csv=expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
@@ -418,7 +422,8 @@ rule slim:
             shell('rm -rf {}'.format(join_path(DIR_PROJ, d, '*')))
         shell('rm -f _done_combodemultiplex')
 
-rule rerun_expr:
+
+rule before_rerun_expr:
     run:
         for d in [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_INPUT]:
             shell('rm -rf {}'.format(join_path(DIR_PROJ, d, '*')))
