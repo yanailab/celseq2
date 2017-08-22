@@ -63,6 +63,11 @@ def run_bam2sam(x):
         print_logger('Failed: bam to sam {} to {}'.format(x, y))
 
 
+def dirsize_str(x):
+    xsize, _ = popen_communicate('du -sh x')
+    return(str(xsize, 'utf-8'))
+
+
 def main():
     p = get_argument_parser()
     args = p.parse_args()
@@ -77,10 +82,13 @@ def main():
                      recursive=True)
 
     if args.dryrun:
-        print_logger(('{} fastqs are'
+        print_logger(('{} fastqs are '
                       'to be gzipped. ').format(len(fqs + fqs_unknown)))
         print_logger('{} sams are to be converted to bam'.format(len(sams)))
         return 0
+
+    subdir_fastq_size0 = dirsize_str(join_path(args.project_dir, SUBDIR_FASTQ))
+    subdir_align_size0 = dirsize_str(join_path(args.project_dir, SUBDIR_ALIGN))
 
     p = Pool(args.cores)
     for fq in fqs + fqs_unknown:
@@ -89,6 +97,15 @@ def main():
         p.apply_async(run_sam2bam, args=(sam,))
     p.close()
     p.join()
+
+    subdir_fastq_size1 = dirsize_str(join_path(args.project_dir, SUBDIR_FASTQ))
+    subdir_align_size1 = dirsize_str(join_path(args.project_dir, SUBDIR_ALIGN))
+
+    print_logger('Storage of FASTQs: {} => {}'.format(subdir_fastq_size0,
+                                                      subdir_fastq_size1))
+    print_logger('Storage of Alignments: {} => {}'.format(subdir_align_size0,
+                                                          subdir_align_size1))
+
     return 0
 
 
