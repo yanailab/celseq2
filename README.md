@@ -181,3 +181,23 @@ Results of <kbd>item-X</kbd> are useful when user has FASTQ files from multiple
 lanes, or technical/biological replicates. Read [Real Example](https://gitlab.com/Puriney/celseq2/wikis/Examples) for further
 details about how to specify experiment table and fetch results when more
 complexed (or real) experiment design happens.
+
+
+# Storage management
+
+To reduce the storage of project, it is suggested to get rid of intermediate
+files, in particular FASTQ and SAM files.
+
+Remove generated FASTQ and SAM files: 
+```
+celseq2 --config-file /path/to/wonderful_CEL-Seq2_config.yaml \
+    --experiment-table /path/to/wonderful_experiment_table.txt \
+    --output-dir /path/to/result_dir \
+    -j 10 clean_FQ_SAM
+```
+
+Alternatively, user can gzip FASTQ and perform SAM2BAM:
+```
+celseq2-slim --project-dir /path/to/result_dir -n
+celseq2-slim --project-dir /path/to/result_dir
+```
