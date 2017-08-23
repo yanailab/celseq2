@@ -124,13 +124,13 @@ rule all:
         #                         itemid=item_names),
         # # Diagnose of alignment
         alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
-                                    '{itemid}', 'alignment_diagnose.csv'),
-                          itemid=item_names),
+                                     '{itemid}', 'alignment_diagnose.csv'),
+                           itemid=item_names),
     output:
         touch('_done_UMI')
     run:
         try:
-            shell('mv celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
+            shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
         except:
             pass
         print_logger('Expression UMI matrix is saved at {}'.format(input.csv))
@@ -140,13 +140,14 @@ rule setup_dir:
     input: SAMPLE_TABLE_FPATH
     output:
         touch('_done_setupdir'),
-        dir1=SUBDIRS,
-        dir2=expand(join_path('{subdir}', '{itemid}'),
-               subdir=[SUBDIR_INPUT, SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_DIAG,
-                       SUBDIR_UMI_CNT, SUBDIR_UMI_SET, SUBDIR_LOG],
-               itemid=item_names),
-        dir3=expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', '{itemid}'),
-                    zip, expid=sample_list, itemid=item_names),
+        dir1 = SUBDIRS,
+        dir2 = expand(join_path('{subdir}', '{itemid}'),
+                      subdir=[SUBDIR_INPUT,
+                              SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_DIAG,
+                              SUBDIR_UMI_CNT, SUBDIR_UMI_SET, SUBDIR_LOG],
+                      itemid=item_names),
+        dir3 = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', '{itemid}'),
+                      zip, expid=sample_list, itemid=item_names),
 
     message: 'Setting up project directory.'
     run:
@@ -169,15 +170,15 @@ rule combo_demultiplexing:
         # Demultiplx fastq in Process pool
         p = Pool(threads)
         for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
-            itemid_in=join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
+            itemid_in = join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
             try:
                 os.symlink(itemr1, join_path(itemid_in, 'R1.fastq.gz'))
                 os.symlink(itemr2, join_path(itemid_in, 'R2.fastq.gz'))
             except OSError:
                 pass
-            itemid_fqs_dir=join_path(DIR_PROJ, SUBDIR_FASTQ, itemid)
-            itemid_log=join_path(DIR_PROJ, SUBDIR_DIAG, itemid,
-                                 'demultiplexing.log')
+            itemid_fqs_dir = join_path(DIR_PROJ, SUBDIR_FASTQ, itemid)
+            itemid_log = join_path(DIR_PROJ, SUBDIR_DIAG, itemid,
+                                   'demultiplexing.log')
             print_logger('Demultiplexing {}'.format(itemid))
             cmd = " ".join(["bc_demultiplex",
                             itemr1,
@@ -200,9 +201,9 @@ rule combo_demultiplexing:
 ## Alignment ##
 rule align_bowtie2:
     input:
-        fq=join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
+        fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
     output:
-        sam=join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam')
+        sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam')
     threads: num_threads
     log:
         join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
@@ -223,9 +224,9 @@ rule align_bowtie2:
 rule cook_annotation:
     input: GFF
     output:
-        anno=join_path(DIR_PROJ, SUBDIR_ANNO,
+        anno = join_path(DIR_PROJ, SUBDIR_ANNO,
                          base_name(GFF) + '.pickle'),
-        flag=touch('_done_annotation'),
+        flag = touch('_done_annotation'),
     message: 'Cooking Annotation'
     run:
         _ = cook_anno_model(GFF, feature_atrr='gene_id',
@@ -237,22 +238,22 @@ rule cook_annotation:
 
 rule count_umi:
     input:
-        gff=join_path(DIR_PROJ, SUBDIR_ANNO,
+        gff = join_path(DIR_PROJ, SUBDIR_ANNO,
                         base_name(GFF) + '.pickle'),
-        sam=join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
+        sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
     output:
-        umicnt=join_path(DIR_PROJ, SUBDIR_UMI_CNT, '{itemid}', '{bc}.pkl'),
-        umiset=join_path(DIR_PROJ, SUBDIR_UMI_SET, '{itemid}', '{bc}.pkl'),
-        aln_diag=join_path(DIR_PROJ, SUBDIR_DIAG, '{itemid}', '{bc}.pkl'),
+        umicnt = join_path(DIR_PROJ, SUBDIR_UMI_CNT, '{itemid}', '{bc}.pkl'),
+        umiset = join_path(DIR_PROJ, SUBDIR_UMI_SET, '{itemid}', '{bc}.pkl'),
+        aln_diag = join_path(DIR_PROJ, SUBDIR_DIAG, '{itemid}', '{bc}.pkl'),
     message: 'Counting {input.sam}'
     run:
         features_f, all_genes = pickle.load(open(input.gff, 'rb'))
         all_genes = sorted(all_genes)
-        umi_cnt, umi_set, aln_cnt=count_umi(sam_fpath=input.sam,
-                                     features=features_f,
-                                     len_umi=UMI_LENGTH,
-                                     accept_aln_qual_min=ALN_QUAL_MIN,
-                                     dumpto=None)
+        umi_cnt, umi_set, aln_cnt = count_umi(sam_fpath=input.sam,
+                                              features=features_f,
+                                              len_umi=UMI_LENGTH,
+                                              accept_aln_qual_min=ALN_QUAL_MIN,
+                                              dumpto=None)
         pickle.dump(umi_cnt, open(output.umicnt, 'wb'))
         pickle.dump(umi_set, open(output.umiset, 'wb'))
         pickle.dump(aln_cnt, open(output.aln_diag, 'wb'))
@@ -261,10 +262,10 @@ rule count_umi:
 # - regular umi-count using *_umicnt.pkl -> umi_count_matrix replicates/lanes per plate
 rule summarize_umi_matrix_per_item:
     input:
-        gff=join_path(DIR_PROJ, SUBDIR_ANNO,
+        gff = join_path(DIR_PROJ, SUBDIR_ANNO,
                         base_name(GFF) + '.pickle'),
-        umicnt=dynamic(join_path(DIR_PROJ, SUBDIR_UMI_CNT,
-                                '{itemid}', '{bc}.pkl')),
+        umicnt = dynamic(join_path(DIR_PROJ, SUBDIR_UMI_CNT,
+                                   '{itemid}', '{bc}.pkl')),
     output:
         # Expression Matrix per item/pair-of-reads/lane per sample/plate
         csv_item = expand(join_path(DIR_PROJ, SUBDIR_EXPR,
@@ -282,12 +283,12 @@ rule summarize_umi_matrix_per_item:
         item_expr_matrix = defaultdict(dict)
 
         for f in input.umicnt:
-            bc_name=base_name(f)  # BC-1-xxx
-            item_id=base_name(dir_name(f))  # item-1
+            bc_name = base_name(f)  # BC-1-xxx
+            item_id = base_name(dir_name(f))  # item-1
             item_expr_matrix[item_id][bc_name] = pickle.load(open(f, 'rb'))
 
         for item_id, expr_dict in item_expr_matrix.items():
-            exp_id=SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME'] # E1
+            exp_id = SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']  # E1
 
             for bc, cnt in expr_dict.items():
                 expr_dict[bc] = pd.Series([cnt[x] for x in all_genes],
@@ -310,18 +311,18 @@ rule umi_matrix:
         hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
                      expid=list(set(sample_list))),
         alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
-                                    '{itemid}', 'alignment_diagnose.csv'),
-                          itemid=item_names),
+                                     '{itemid}', 'alignment_diagnose.csv'),
+                           itemid=item_names),
 
     message: 'UMI matrix per experiment'
 
 
 rule summarize_umi_matrix_per_experiment:
     input:
-        gff=join_path(DIR_PROJ, SUBDIR_ANNO,
+        gff = join_path(DIR_PROJ, SUBDIR_ANNO,
                         base_name(GFF) + '.pickle'),
-        umiset=dynamic(join_path(DIR_PROJ, SUBDIR_UMI_SET,
-                                '{itemid}', '{bc}.pkl')),
+        umiset = dynamic(join_path(DIR_PROJ, SUBDIR_UMI_SET,
+                                   '{itemid}', '{bc}.pkl')),
     output:
         # Expression Matrix per experiment/sample/plate
         csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
@@ -342,9 +343,9 @@ rule summarize_umi_matrix_per_experiment:
             exp_expr_matrix[exp_id] = defaultdict(dict)
 
         for f in input.umiset:
-            bc_name=base_name(f)  # BC-1-xxx
-            item_id=base_name(dir_name(f))  # item-1
-            exp_id=SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']
+            bc_name = base_name(f)  # BC-1-xxx
+            item_id = base_name(dir_name(f))  # item-1
+            exp_id = SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']
 
             umiset_stream = pickle.load(open(f, 'rb'))
             if len(exp_expr_matrix[exp_id][bc_name]) == 0:
@@ -355,7 +356,6 @@ rule summarize_umi_matrix_per_experiment:
                 y1 = exp_expr_matrix[exp_id][bc_name].get(x, set())
                 y2 = umiset_stream.get(x, set())
                 exp_expr_matrix[exp_id][bc_name][x] = y1 | y2
-
 
         for exp_id, expr_dict in exp_expr_matrix.items():
             for bc, cnt in expr_dict.items():
@@ -378,24 +378,24 @@ rule summarize_alignment_diagnose:
     output:
         # Diagnose of alignment
         alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
-                                    '{itemid}', 'alignment_diagnose.csv'),
-                          itemid=item_names),
+                                     '{itemid}', 'alignment_diagnose.csv'),
+                           itemid=item_names),
     priority: 10
     run:
         # item_id -> dict(cell_bc -> Counter(align))
         item_aln_mat = defaultdict(dict)
 
         for f in input.aln_diag:
-            bc_name=base_name(f)  # BC-1-xxx
-            item_id=base_name(dir_name(f))  # item-1
+            bc_name = base_name(f)  # BC-1-xxx
+            item_id = base_name(dir_name(f))  # item-1
             item_aln_mat[item_id][bc_name] = pickle.load(open(f, 'rb'))
 
         for item_id, aln_dict in item_aln_mat.items():
             for bc, cnt in aln_dict.items():
                 aln_dict[bc] = pd.Series([cnt[x] for x in aln_diagnose_item],
-                                          index=aln_diagnose_item)
+                                         index=aln_diagnose_item)
 
-            aln_df= pd.DataFrame(aln_dict, index=aln_diagnose_item).fillna(0)
+            aln_df = pd.DataFrame(aln_dict, index=aln_diagnose_item).fillna(0)
             aln_df.to_csv(join_path(DIR_PROJ, SUBDIR_DIAG,
                                     item_id, 'alignment_diagnose.csv'))
 
@@ -412,9 +412,9 @@ rule cleanall:
 rule clean_FQ_SAM:
     input:
         # Expression Matrix
-        csv=expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
                      expid=list(set(sample_list))),
-        hdf=expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
                      expid=list(set(sample_list))),
     message: "Remove files under {DIR_PROJ} except expression results."
     run:
@@ -429,4 +429,3 @@ rule before_rerun_expr:
             shell('rm -rf {}'.format(join_path(DIR_PROJ, d, '*')))
         shell('rm -f _done_combodemultiplex')
         shell('rm -f {}'.format(join_path(SUBDIR_QSUB, 'celseq2_job.*.sh.*')))
-
