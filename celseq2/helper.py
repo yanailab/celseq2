@@ -11,6 +11,7 @@ import subprocess
 import sys
 import pandas as pd
 # import yaml
+import hashlib
 
 
 def join_path(*args):
@@ -130,6 +131,18 @@ def cook_sample_sheet(fpath, sep='\s+'):
     sample_sheet.index = list(map(lambda x: 'item-' + str(x),
                                   sample_sheet.index + 1))
     return(sample_sheet)
+
+
+def md5sum(fpath, block_size=2**20):
+    '''
+    Calculate md5 sum of fpath.
+    https://stackoverflow.com/a/3431838/1608734
+    '''
+    md5 = hashlib.md5()
+    with open(fpath, 'rb') as f:
+        for chunk in iter(lambda: f.read(block_size), b""):
+            md5.update(chunk)
+    return(md5.hexdigest())
 
 
 def main():
