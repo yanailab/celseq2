@@ -64,6 +64,19 @@ def get_seq(fasta, chrm, start, end, strand):
     return(raw_seq)
 
 
+def dummy_read_name(is_PE=True):
+    # @MN00336:10:000H23YMF:1:12102:15294:5115 1:N:0:CAGATC
+    # @MN00336:10:000H23YMF:1:12102:15294:5115 2:N:0:CAGATC
+    x = '@MN00336:{}:00CELSEQ2:1:{}:{}:{}'.format(
+        random.choice(range(1, 10)),
+        random.choice(range(1, 100000)),
+        random.choice(range(1, 100000)))
+    xx = '1:N:0:{}'.format()
+    if is_PE:
+        r1 = x + ' ' + xx
+    return(r1)
+
+
 def fastq_line(readname, readseq, readquality):
     assert len(readseq) == len(readquality), ('Read sequence and quality string'
                                               ' should be same.')
@@ -107,7 +120,7 @@ def umi_generator(nuc_base='ATGC', length=6):
 
 def dummy_CELSeq2(gtf, fasta, barcodes, savetor1, savetor2, len_tx=50):
     default_len_min_tx = 35
-    default_qual_tx = 10
+    default_qual = 10
 
     fh_fa = pysam.FastaFile(fasta)
 
@@ -122,17 +135,37 @@ def dummy_CELSeq2(gtf, fasta, barcodes, savetor1, savetor2, len_tx=50):
     for k, _ in gene.items():
         gene[k].sort(key=lambda x: int(x.attr['exon_num'].strip()))
 
+    rand_seed = 42
     for bcid, bc in barcodes.items():
+        random.seed(rand_seed)
+        r1_seq_fmt = '{umi}' + bc
         for gene, exons in gene.items():
             umi_pool = umi_generator()
-            # umi: within exons, good quality, good length
-            read_start = random.randrange(exons.iv.start, exons.iv.end - len_tx)
-            read_seq = get_seq(fasta, exons.iv.chrom,
-                               read_start, read_start + len_tx,
-                               exons.iv.strand)
-            read_qual = dummy_readquality()
-            # off-keyboard
+            for exon in exons:
+                umi_seq = ''.join(next(umi_pool))
+                r1_seq = r1_seq_fmt.format(umi=umi_seq)
+                r1_qual = dummy_readquality(readseq=r1_seq,
+                                            min_qual=default_qual)
+                for _ in range(3):
+                    # umi - read within exons, good quality, good length
+                    r2_start = random.randrange(
+                        exon.iv.start, exon.iv.end - len_tx)
+                    r2_seq = get_seq(fasta, exon.iv.chrom,
+                                     r2_start, r2_start + len_tx,
+                                     exon.iv.strand)
+                    r2_qual = dummy_readquality(readseq=r2_seq,
+                                                min_qual=default_qual)
 
+                    r1 = fastq_line(readname='xxx',
+                                    readseq=r1_seq, readquality=r1_qual)
+                    r2 = fastq_line(readname='xxx',
+                                    readseq=r2_seq, readquality=r2_qual)
+
+                    fh1.write('{}\n'.format(r1))
+                    fh2.write('{}\n'.format(r2))
+
+
+        rand_seed += 1
 
 
 if __name__ == '__main__':
