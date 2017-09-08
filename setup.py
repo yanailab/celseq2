@@ -142,6 +142,10 @@ setup(
              'celseq2.celseq2:main'),
             ('celseq2-slim = '
              'celseq2.slim:main'),
+            ('dummy-species = '
+             'celseq2.dummy_species:main'),
+            ('simulate-celseq2 = '
+             'celseq2.dummy_CELSeq2_reads:main')
         ],
     },
 

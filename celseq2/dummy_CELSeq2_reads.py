@@ -8,6 +8,7 @@ Required inputs:
 import random
 from collections import defaultdict
 import itertools
+import argparse
 import pysam
 import HTSeq
 
@@ -67,20 +68,24 @@ def get_seq(fasta, chrm, start, end, strand):
 def dummy_read_name(is_PE=True):
     # @MN00336:10:000H23YMF:1:12102:15294:5115 1:N:0:CAGATC
     # @MN00336:10:000H23YMF:1:12102:15294:5115 2:N:0:CAGATC
-    x = '@MN00336:{}:00CELSEQ2:1:{}:{}:{}'.format(
+    prefix = '@MN00336:{}:00CELSEQ2:1:{}:{}:{}'.format(
         random.choice(range(1, 10)),
         random.choice(range(1, 100000)),
-        random.choice(range(1, 100000)))
-    xx = '1:N:0:{}'.format()
-    if is_PE:
-        r1 = x + ' ' + xx
-    return(r1)
+        random.choice(range(1, 100000)),
+        random.choice(range(1, 1000)))
+    suffix = '1:N:0:{}'.format('ATGCGC')
+    name_r1 = prefix + ' ' + suffix
+    if not is_PE:
+        return((name_r1, None))
+    suffix = '2' + suffix[1:]
+    name_r2 = prefix + ' ' + suffix
+    return((name_r1, name_r2))
 
 
 def fastq_line(readname, readseq, readquality):
     assert len(readseq) == len(readquality), ('Read sequence and quality string'
                                               ' should be same.')
-    out = '@{}\n{}\n{}\n{}'.format(readname, readseq, '+', readquality)
+    out = '{}\n{}\n{}\n{}'.format(readname, readseq, '+', readquality)
     return(out)
 
 
@@ -101,7 +106,7 @@ def dummy_readquality(length=None, min_qual=0, max_qual=40, readseq=None):
     if readseq:
         length = len(readseq)
     assert not length is None, 'Specify length.'
-    random.seed(42)
+    # random.seed(42)
     q_score = random.choices(range(min_qual, max_qual + 1, 1), k=length)
     seq = ''.join(map(lambda x: chr(x + 33), q_score))
     return(seq)
@@ -118,64 +123,132 @@ def umi_generator(nuc_base='ATGC', length=6):
     return(itertools.product(nuc_base, repeat=length))
 
 
-def dummy_CELSeq2(gtf, fasta, barcodes, savetor1, savetor2, len_tx=50):
+def dummy_CELSeq2(gtf, fasta, savetor1, savetor2, len_tx=50):
     default_len_min_tx = 35
     default_qual = 10
+
+    barcodes = dummy_cell_barcodes()
 
     fh_fa = pysam.FastaFile(fasta)
 
     fh1 = open(savetor1, 'w')
     fh2 = open(savetor2, 'w')
 
-    gene = defaultdict(list)
+    gene_content = defaultdict(list)
     fh_gtf = HTSeq.GFF_Reader(gtf)
     for gtf in fh_gtf:
         if gtf.type == 'exon':
-            gene[gtf.attr['gene_id'].strip()].append(gtf)
-    for k, _ in gene.items():
-        gene[k].sort(key=lambda x: int(x.attr['exon_num'].strip()))
+            gene_content[gtf.attr['gene_id'].strip()].append(gtf)
+    for k, _ in gene_content.items():
+        gene_content[k].sort(key=lambda x: int(x.attr['exon_number'].strip()))
 
     rand_seed = 42
+    bc_read_coord = defaultdict(list)
     for bcid, bc in barcodes.items():
         random.seed(rand_seed)
         r1_seq_fmt = '{umi}' + bc
-        for gene, exons in gene.items():
+        for gene, exons in gene_content.items():
             umi_pool = umi_generator()
             for exon in exons:
                 umi_seq = ''.join(next(umi_pool))
                 r1_seq = r1_seq_fmt.format(umi=umi_seq)
                 r1_qual = dummy_readquality(readseq=r1_seq,
                                             min_qual=default_qual)
-                for _ in range(3):
+                for i in range(1):
                     # umi - read within exons, good quality, good length
                     r2_start = random.randrange(
                         exon.iv.start, exon.iv.end - len_tx)
+                    r2_end = r2_start + len_tx
                     r2_seq = get_seq(fasta, exon.iv.chrom,
-                                     r2_start, r2_start + len_tx,
+                                     r2_start, r2_end,
                                      exon.iv.strand)
                     r2_qual = dummy_readquality(readseq=r2_seq,
                                                 min_qual=default_qual)
 
-                    r1 = fastq_line(readname='xxx',
+                    r1_name, r2_name = dummy_read_name()
+                    r1 = fastq_line(readname=r1_name,
                                     readseq=r1_seq, readquality=r1_qual)
-                    r2 = fastq_line(readname='xxx',
+                    r2 = fastq_line(readname=r2_name,
                                     readseq=r2_seq, readquality=r2_qual)
 
                     fh1.write('{}\n'.format(r1))
                     fh2.write('{}\n'.format(r2))
 
-
+                    expected_align = (exon.iv.chrom, r2_start, r2_end,
+                                      exon.iv.strand)
+                    bc_read_coord[bcid].append(expected_align)
         rand_seed += 1
+    fh1.close()
+    fh2.close()
+    return(bc_read_coord)
+
+
+def get_argument_parser():
+    parser = argparse.ArgumentParser(add_help=True)
+    parser.add_argument(
+        '--gtf',
+        metavar="FILE",
+        help='GTF file path.')
+    parser.add_argument(
+        '--fasta',
+        metavar="FILE",
+        help='FASTA file path.')
+
+    parser.add_argument(
+        '--savetor1',
+        required=True, metavar="FILE",
+        help='Save to R1 (UMI+BC)')
+    parser.add_argument(
+        '--savetor2',
+        required=True, metavar="FILE",
+        help='Save to R2 (transcript)')
+
+    parser.add_argument(
+        '--expected-alignment', '-ea',
+        metavar='FILE',
+        help='Save to expected alignment positions (bed6 format).')
+
+    parser.add_argument(
+        '--test',
+        action='store_true', default=False,
+        help='Perform doctest only.')
+    parser.add_argument(
+        '--verbose', '-v',
+        action='count',
+        help='Verbose')
+    return(parser)
+
+
+def main():
+    p = get_argument_parser()
+    args = p.parse_args()
+
+    if args.verbose >= 4:
+        print(args)
+
+    if args.test:
+        import doctest
+        doctest.testmod()
+    else:
+        out = dummy_CELSeq2(args.gtf, args.fasta,
+                            args.savetor1, args.savetor2)
+        if not args.expected_alignment:
+            return
+        fhout = open(args.expected_alignment, 'w')
+        bed6_fmt = '{chrom}\t{s}\t{e}\t{id}\t{score}\t{strand}'
+        for bcname, reads in out.items():
+            for i, read in enumerate(reads):
+                bed_id = '{}_{}'.format(bcname, i + 1)
+                bed_line = bed6_fmt.format(
+                    chrom=read[0],
+                    s=read[1],
+                    e=read[2],
+                    id=bed_id,
+                    score=255,
+                    strand=read[3])
+                fhout.write('{}\n'.format(bed_line))
+        fhout.close()
 
 
 if __name__ == '__main__':
-    # p = get_argument_parser()
-    # args = p.parse_args()
-
-    # if args.test:
-    #     import doctest
-    #     doctest.testmod()
-    # else:
-    #     dummy_gtf(args.gtf)
-    #     dummy_fasta(args.fasta)
-    pass
+    main()

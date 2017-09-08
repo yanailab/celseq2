@@ -502,7 +502,7 @@ def get_argument_parser():
     return(parser)
 
 
-if __name__ == '__main__':
+def main():
     p = get_argument_parser()
     args = p.parse_args()
 
@@ -512,3 +512,7 @@ if __name__ == '__main__':
     else:
         dummy_gtf(args.gtf)
         dummy_fasta(args.fasta)
+
+
+if __name__ == '__main__':
+    main()
