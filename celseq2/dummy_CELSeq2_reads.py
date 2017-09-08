@@ -214,7 +214,7 @@ def get_argument_parser():
         help='Perform doctest only.')
     parser.add_argument(
         '--verbose', '-v',
-        action='count',
+        action='count', default=0,
         help='Verbose')
     return(parser)
 
