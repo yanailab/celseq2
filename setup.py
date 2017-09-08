@@ -16,7 +16,8 @@ description = ('A Python Package for Processing '
 install_requires = [
     'snakemake==4.0.0',
     'pyyaml>=3.12, <4',
-    'HTSeq>=0.8',
+    'HTSeq>=0.9',
+    'pytest==3.2.2',
 ]
 
 # do not require installation if built by ReadTheDocs
