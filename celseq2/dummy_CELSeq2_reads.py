@@ -145,10 +145,14 @@ def dummy_CELSeq2(gtf, fasta, savetor1, savetor2, len_tx=50):
     rand_seed = 42
     bc_read_coord = defaultdict(list)
     for bcid, bc in barcodes.items():
+        rand_seed += 1
         random.seed(rand_seed)
         r1_seq_fmt = '{umi}' + bc
         for gene, exons in gene_content.items():
-            umi_pool = umi_generator()
+            # nuc_base = list('ATGC')
+            # random.shuffle(nuc_base)
+            # nuc_base = ''.join(nuc_base)
+            umi_pool = umi_generator(nuc_base='ATGC', length=6)
             for exon in exons:
                 umi_seq = ''.join(next(umi_pool))
                 r1_seq = r1_seq_fmt.format(umi=umi_seq)
@@ -156,8 +160,9 @@ def dummy_CELSeq2(gtf, fasta, savetor1, savetor2, len_tx=50):
                                             min_qual=default_qual)
                 for i in range(1):
                     # umi - read within exons, good quality, good length
-                    r2_start = random.randrange(
-                        exon.iv.start, exon.iv.end - len_tx)
+                    # r2_start = random.randrange(
+                    #     exon.iv.start, exon.iv.end - len_tx)
+                    r2_start = exon.iv.start + i
                     r2_end = r2_start + len_tx
                     r2_seq = get_seq(fasta, exon.iv.chrom,
                                      r2_start, r2_end,
@@ -177,7 +182,6 @@ def dummy_CELSeq2(gtf, fasta, savetor1, savetor2, len_tx=50):
                     expected_align = (exon.iv.chrom, r2_start, r2_end,
                                       exon.iv.strand)
                     bc_read_coord[bcid].append(expected_align)
-        rand_seed += 1
     fh1.close()
     fh2.close()
     return(bc_read_coord)
