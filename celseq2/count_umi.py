@@ -12,14 +12,14 @@ from collections import defaultdict, Counter
 
 def invert_strand(iv):
     # https://github.com/simon-anders/htseq/blob/78f955fc2007e5d861c54336095c383502086687/python3/HTSeq/scripts/count.py#L184-L190
-    iv2 = iv.copy()
-    if iv2.strand == "+":
-        iv2.strand = "-"
-    elif iv2.strand == "-":
-        iv2.strand = "+"
+    new_iv = iv.copy()
+    if new_iv.strand == "+":
+        new_iv.strand = "-"
+    elif new_iv.strand == "-":
+        new_iv.strand = "+"
     else:
         raise ValueError("Illegal strand")
-    return iv2
+    return new_iv
 
 
 def _umi_seq(name, length=6):
