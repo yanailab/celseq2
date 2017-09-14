@@ -10,6 +10,18 @@ import argparse
 from collections import defaultdict, Counter
 
 
+def invert_strand(iv):
+    # https://github.com/simon-anders/htseq/blob/78f955fc2007e5d861c54336095c383502086687/python3/HTSeq/scripts/count.py#L184-L190
+    iv2 = iv.copy()
+    if iv2.strand == "+":
+        iv2.strand = "-"
+    elif iv2.strand == "-":
+        iv2.strand = "+"
+    else:
+        raise ValueError("Illegal strand")
+    return iv2
+
+
 def _umi_seq(name, length=6):
     # BC-TCTGAG_UMI-CGTTAC => CGTTAC
     try:
@@ -19,7 +31,8 @@ def _umi_seq(name, length=6):
     return(out)
 
 
-def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
+def count_umi(sam_fpath, features, stranded='yes',
+              len_umi=6, accept_aln_qual_min=10,
               dumpto=None):
     '''
     Single SAM + GFF => UMI (saved in Python's Counter)
@@ -59,7 +72,9 @@ def count_umi(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
         for aln_part in aln.cigar:
             if aln_part.type != 'M':
                 continue
-            for _, gene_id in features[aln_part.ref_iv].steps():
+            aln_ref_iv = invert_strand(
+                aln_part.ref_iv) if stranded == 'reverse' else aln_part.ref_iv
+            for _, gene_id in features[aln_ref_iv].steps():
                 gene_ids |= gene_id
 
         # union model
@@ -94,6 +109,11 @@ def main():
                         help='File path to SAM file')
     parser.add_argument('--features', metavar='FILENAME.pickle|Counter',
                         required=True,
+                        help=('Either file path (pickle format only) '
+                              'or Python object in counter'))
+    parser.add_argument('--stranded', metavar='VAL',
+                        choices=['yes', 'reverse'],
+                        default='yes',
                         help=('Either file path (pickle format only) '
                               'or Python object in counter'))
     parser.add_argument('--umi-length', type=int, metavar='N',
