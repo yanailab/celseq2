@@ -47,6 +47,7 @@ ALIGNER = config.get('ALIGNER', None)  # 'bowtie2'
 
 ## UMI Count ##
 ALN_QUAL_MIN = config.get('ALN_QUAL_MIN', None)  # 0
+STRANDED = config.get('stranded', 'yes')
 
 
 ## Running Parameters ##
@@ -252,6 +253,7 @@ rule count_umi:
         umi_cnt, umi_set, aln_cnt = count_umi(sam_fpath=input.sam,
                                               features=features_f,
                                               len_umi=UMI_LENGTH,
+                                              stranded=STRANDED,
                                               accept_aln_qual_min=ALN_QUAL_MIN,
                                               dumpto=None)
         pickle.dump(umi_cnt, open(output.umicnt, 'wb'))

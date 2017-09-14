@@ -58,6 +58,11 @@ def get_argument_parser():
         help=("All results are saved with here as root directory."))
 
     parser.add_argument(
+        "--reverse-stranded", "--rs",
+        action="store_true", default=False,
+        help="Read has to be mapped to the opposite strand as the feature")
+
+    parser.add_argument(
         "--cores", "--jobs", "-j",
         action="store",
         nargs="?",
@@ -103,7 +108,7 @@ def get_argument_parser():
 def main():
     p = get_argument_parser()
     args = p.parse_args()
-
+    stranded = "reverse" if args.reverse_stranded else "yes"
     workflow_fpath = get_workflow_file_fpath()
 
     success = snakemake(
@@ -112,7 +117,8 @@ def main():
 
         configfile=args.config_file,
         config={'output_dir': args.output_dir,
-                'experiment_table': args.experiment_table},
+                'experiment_table': args.experiment_table,
+                'stranded': stranded},
 
         printshellcmds=True,
         printreason=True,
