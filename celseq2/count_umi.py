@@ -131,5 +131,6 @@ def main():
     _ = count_umi(sam_fpath=args.sam_fpath,
                   features=args.features,
                   len_umi=args.umi_length,
+                  stranded=args.stranded,
                   accept_aln_qual_min=args.aln_qual_min,
                   dumpto=args.dumpto)
