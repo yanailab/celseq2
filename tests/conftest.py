@@ -1,6 +1,8 @@
 import pytest
 from celseq2.dummy_species import dummy_gtf, dummy_fasta
 from celseq2.dummy_CELSeq2_reads import dummy_CELSeq2
+from celseq2.dummy_CELSeq2_reads import dummy_cell_barcodes
+from celseq2.demultiplex import demultiplexing, write_demultiplexing
 
 
 @pytest.fixture(scope='function')
@@ -32,3 +34,30 @@ def instance_celseq2_data(tmpdir_factory):
                       str(r1_gz), str(r2_gz),
                       len_tx=50, gzip=True)
     return (r1_gz, r2_gz)
+
+
+@pytest.fixture(scope='session')
+def instance_demultiplex_stats(tmpdir_factory, instance_celseq2_data):
+    fdir = tmpdir_factory.mktemp('small_fq')
+    r1_gz, r2_gz = instance_celseq2_data
+    dict_bc_id2seq = dummy_cell_barcodes()
+    sample_counter = demultiplexing(
+        read1_fpath=str(r1_gz),
+        read2_fpath=str(r2_gz),
+        outdir=fdir,
+        dict_bc_id2seq=dict_bc_id2seq,
+        len_umi=6,
+        len_bc=6,
+        len_tx=35,
+        bc_qual_min=10,
+        is_gzip=True)
+    stats_fpath = fdir.join('demultiplexing.log')
+    write_demultiplexing(sample_counter, dict_bc_id2seq, stats_fpath)
+    return stats_fpath
+
+
+@pytest.fixture(scope='session')
+
+
+
+

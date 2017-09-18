@@ -276,7 +276,6 @@ rule summarize_umi_matrix_per_item:
         hdf_item = expand(join_path(DIR_PROJ, SUBDIR_EXPR,
                                     '{expid}', '{itemid}', 'expr.h5'), zip,
                           expid=sample_list, itemid=item_names),
-    priority: 20
     run:
         _, all_genes = pickle.load(open(input.gff, 'rb'))
         all_genes = sorted(all_genes)
@@ -331,7 +330,6 @@ rule summarize_umi_matrix_per_experiment:
                      expid=list(set(sample_list))),
         hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
                      expid=list(set(sample_list))),
-    priority: 30
     run:
         _, all_genes = pickle.load(open(input.gff, 'rb'))
         all_genes = sorted(all_genes)
@@ -382,7 +380,6 @@ rule summarize_alignment_diagnose:
         alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
                                      '{itemid}', 'alignment_diagnose.csv'),
                            itemid=item_names),
-    priority: 10
     run:
         # item_id -> dict(cell_bc -> Counter(align))
         item_aln_mat = defaultdict(dict)
