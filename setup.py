@@ -97,9 +97,10 @@ setup(
 
     # libraries = [],
 
+    setup_requires=['pytest-runner'],
     install_requires=install_requires,
 
-    # tests_require=[],
+    tests_require=['pytest'],
 
     extras_require={
         'docs': [

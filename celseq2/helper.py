@@ -138,11 +138,12 @@ def md5sum(fpath, block_size=2**20):
     Calculate md5 sum of fpath.
     https://stackoverflow.com/a/3431838/1608734
     '''
-    md5 = hashlib.md5()
-    with open(fpath, 'rb') as f:
-        for chunk in iter(lambda: f.read(block_size), b""):
-            md5.update(chunk)
-    return(md5.hexdigest())
+    # md5 = hashlib.md5()
+    # with open(fpath, 'rb') as f:
+    #     for chunk in iter(lambda: f.read(block_size), b""):
+    #         md5.update(chunk)
+    # return(md5.hexdigest())
+    return hashlib.md5(open(fpath, 'rb').read()).hexdigest()
 
 
 def main():
