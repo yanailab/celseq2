@@ -12,6 +12,8 @@ import argparse
 import pysam
 import HTSeq
 
+from celseq2.helper import popen_communicate, base_name, dir_name, join_path
+
 
 def dummy_cell_barcodes():
     '''
@@ -123,13 +125,23 @@ def umi_generator(nuc_base='ATGC', length=6):
     return(itertools.product(nuc_base, repeat=length))
 
 
-def dummy_CELSeq2(gtf, fasta, savetor1, savetor2, len_tx=50):
+def _remove_gz_suffix(x):
+    xbasename = base_name(x)
+    xdirname = dir_name(x)
+    return join_path(xdirname, xbasename.replace('.gz', ''))
+
+
+def dummy_CELSeq2(gtf, fasta, savetor1, savetor2, len_tx=50, gzip=True):
     default_len_min_tx = 35
     default_qual = 10
 
     barcodes = dummy_cell_barcodes()
 
     fh_fa = pysam.FastaFile(fasta)
+
+    if gzip:
+        savetor1 = _remove_gz_suffix(savetor1)
+        savetor2 = _remove_gz_suffix(savetor2)
 
     fh1 = open(savetor1, 'w')
     fh2 = open(savetor2, 'w')
@@ -184,6 +196,14 @@ def dummy_CELSeq2(gtf, fasta, savetor1, savetor2, len_tx=50):
                     bc_read_coord[bcid].append(expected_align)
     fh1.close()
     fh2.close()
+
+    # gzip
+    if gzip:
+        # https://unix.stackexchange.com/a/31009
+        # get rid of header of gzip
+        _ = popen_communicate('gzip -n {} '.format(savetor1))
+        _ = popen_communicate('gzip -n {} '.format(savetor2))
+
     return(bc_read_coord)
 
 
@@ -211,6 +231,10 @@ def get_argument_parser():
         '--expected-alignment', '-ea',
         metavar='FILE',
         help='Save to expected alignment positions (bed6 format).')
+    parser.add_argument(
+        '--gzip',
+        action='store_true', default=False,
+        help='Gzip reads.fq to reads.fq.gz')
 
     parser.add_argument(
         '--test',
@@ -235,7 +259,9 @@ def main():
         doctest.testmod()
     else:
         out = dummy_CELSeq2(args.gtf, args.fasta,
-                            args.savetor1, args.savetor2)
+                            args.savetor1, args.savetor2,
+                            len_tx=50,
+                            gzip=args.gzip)
         if not args.expected_alignment:
             return
         fhout = open(args.expected_alignment, 'w')
