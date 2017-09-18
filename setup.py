@@ -120,6 +120,7 @@ setup(
         'celseq2': [
             'template/*',  # config.yaml, etc
             'workflow/*'  # snakemake workflow
+            'demo/*',  # demo data for running dummy analysis
         ]
     },
     # data outside the package
@@ -144,10 +145,12 @@ setup(
              'celseq2.celseq2:main'),
             ('celseq2-slim = '
              'celseq2.slim:main'),
-            ('dummy-species = '
+            ('celseq2-dummy-species = '
              'celseq2.dummy_species:main'),
-            ('simulate-celseq2 = '
-             'celseq2.dummy_CELSeq2_reads:main')
+            ('celseq2-simulate = '
+             'celseq2.dummy_CELSeq2_reads:main'),
+            ('celseq2-test = '
+             'celseq2.dummy_celseq2_test:main'),
         ],
     },
 
