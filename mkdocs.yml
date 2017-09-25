@@ -3,13 +3,14 @@ repo_url: https://github.com/yanailab/celseq2.git
 edit_uri: edit/master/docs/docs/
 site_description: 'User manual for celseq2, a Python framework for processing CEL-Seq2 data'
 site_author: 'Yun Yan'
-theme: flatly
+theme: yeti
 extra:
     theme_inverse: true
 
 markdown_extensions:
   - pymdownx.emoji:
       emoji_generator: !!python/name:pymdownx.emoji.to_png
+  - pymdownx.betterem:
   - fontawesome_markdown
   - toc(permalink=true)
   - admonition:
