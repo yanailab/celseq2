@@ -104,10 +104,14 @@ setup(
 
     extras_require={
         'docs': [
-            'sphinx',
-            'sphinx-rtd-theme',
-            'sphinx-argparse',
-            'mock',
+            # 'sphinx',
+            # 'sphinx-rtd-theme',
+            # 'sphinx-argparse',
+            # 'mock',
+            'mkdocs',
+            'fontawesome_markdown',
+            'mkdocs-bootswatch',
+            'pymdown-extensions',
         ],
         'tests': [
             'pytest>=3, <4',

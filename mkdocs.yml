@@ -1,0 +1,25 @@
+site_name: celseq2
+repo_url: https://github.com/yanailab/celseq2.git
+edit_uri: edit/master/docs/docs/
+site_description: 'User manual for celseq2, a Python framework for processing CEL-Seq2 data'
+site_author: 'Yun Yan'
+theme: flatly
+
+markdown_extensions:
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:pymdownx.emoji.to_png
+  - fontawesome_markdown
+  - toc(permalink=true)
+  - admonition:
+
+pages:
+  - Home: 'index.md'
+  - User Guide:
+    - 'Setup configuration': 'user_guide/setup_config.md'
+    - 'Specify experiment table': 'user_guide/experiment_table.md'
+    - 'Launch pipeline': 'user_guide/launch_pipeline.md'
+  - About:
+    - 'Reproducibility': 'about/reproducibility.md'
+    - 'Performance': 'about/performance.md'
+    - 'User Experience': 'about/user_friendly.md'
+    - 'Release Note': 'about/release_note.md'

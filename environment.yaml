@@ -1,0 +1,15 @@
+name: celseq2
+channels:
+- defaults
+dependencies:
+- python=3.6.1=2
+- pip:
+  - fontawesome-markdown==0.2.6
+  - htseq==0.9.1
+  - mkdocs==0.16.3
+  - pysam==0.12.0.1
+  - pytest==3.2.2
+  - pyyaml==3.12
+  - snakemake==4.0.0
+  - tabulate==0.7.7
+
