@@ -4,6 +4,8 @@ edit_uri: edit/master/docs/docs/
 site_description: 'User manual for celseq2, a Python framework for processing CEL-Seq2 data'
 site_author: 'Yun Yan'
 theme: flatly
+extra:
+    theme_inverse: true
 
 markdown_extensions:
   - pymdownx.emoji:
