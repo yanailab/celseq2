@@ -44,13 +44,19 @@ Running `celseq2` pipeline is easy as 1-2-3, and here is a quick start tutorial
 based on an arbitrary example. Suppose user performed CEL-Seq2 and got samples
 designed in the way shown as figure below.
 
-![experiment_2plates_1lane](http://i.imgur.com/Vi2cD6e.png)
+![experiment-old-pipeline-visualize](https://i.imgur.com/9ZEOnUj.png)
 
-The user had two biological samples with 8 and 96 cells respectively, which could come
-from two time-points, two tissues, or even two labs. Samples were marked with
-two different Illumina sequencing barcodes (blue and orange dots), mixed
-together, and subsequently sequenced in the same lane, which finally resulted
-to 2 FASTQ files.
+This was the visualization of the experiment design as shown as in the [sample sheet](https://github.com/yanailab/CEL-Seq-pipeline/blob/133912cd4ceb20af0c67627ab883dfce8b9668df/sample_sheet_example.txt)
+in previous pipeline.
+
+The user had two biological samples which could come
+from two time-points, two tissues, or even two labs. 
+They were denoted as squares and circles, respectively.
+Each sample had 9 cells for example.
+
+Though they were marked with same Illumina sequencing barcodes and sequenced togerther, 
+user was able to distinguish the source of cells because each cell had its own cell barcode.
+Cells with barcode 1-9 came from sample-1 and cells with barcode 10-18 came from sample-2.
 
 By running the pipeline of `celseq2` with the them, the users would get
 UMI count matrix for each of the two plates.
@@ -88,22 +94,23 @@ Fill information into the generated experiment table file.
 
 :warning: Note: each slot cannot contain any space.
 
-The content of experiment table in this example could be:
+The content of experiment table in this example is:
 
 | SAMPLE_NAME               | CELL_BARCODES_INDEX   | R1                        | R2                        |
 |-----------------------    |---------------------  |-------------------------  |-------------------------  |
-| wonderful_experiment1     | 1,8,2-7               | path/to/sampleX-lane2-R1.fastq.gz   | path/to/sampleX-lane2-R2.fastq.gz   |
-| wonderful_experiment2     | 1-96                  | path/to/sampleY-lane2-R1.fastq.gz   | path/to/sampleY-lane2-R2.fastq.gz   |
+| wonderful_experiment1     | 1-9                   | path/to/lane1-R1.fastq.gz   | path/to/lane1-R2.fastq.gz   |
+| wonderful_experiment2     | 10-18                 | path/to/lane1-R1.fastq.gz   | path/to/lane1-R2.fastq.gz   |
+| wonderful_experiment1     | 1,9,2-7               | path/to/lane2-R1.fastq.gz   | path/to/lane2-R2.fastq.gz   |
+| wonderful_experiment2     | 18-10                 | path/to/lane2-R1.fastq.gz   | path/to/lane2-R2.fastq.gz   |
 
-Each row records one pair of FASTQ reads.
 
 To ease the pain of manually specifying `CELL_BARCODES_INDEX`, `celseq2`
 recognizes human inputs in various way. Examples of specification of barcodes
 indexed from 1 to 8 that present in experiment-1 are listed and are all allowed.
 
-1. `1-8`: the most straightforward way.
-2. `1,8,2-7` or `1,8,7-2`: combination of individual and range assignment.
-3. `8,1,7-2,6`: redundancy is tolerant.
+1. `1-9`: the most straightforward way.
+2. `1,9,2-7` or `1,9,7-2`: combination of individual and range assignment.
+3. `9,1,7-2,6`: redundancy is tolerant.
 
 Read [Experiment Table Specification](https://gitlab.com/Puriney/celseq2/wikis/Examples) for further details when more complexed
 experiment design happens.
