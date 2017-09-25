@@ -100,7 +100,7 @@ The content of experiment table in this example is:
 |-----------------------    |---------------------  |-------------------------  |-------------------------  |
 | wonderful_experiment1     | 1-9                   | path/to/lane1-R1.fastq.gz   | path/to/lane1-R2.fastq.gz   |
 | wonderful_experiment2     | 10-18                 | path/to/lane1-R1.fastq.gz   | path/to/lane1-R2.fastq.gz   |
-| wonderful_experiment1     | 1,9,2-7               | path/to/lane2-R1.fastq.gz   | path/to/lane2-R2.fastq.gz   |
+| wonderful_experiment1     | 1,9,2-8               | path/to/lane2-R1.fastq.gz   | path/to/lane2-R2.fastq.gz   |
 | wonderful_experiment2     | 18-10                 | path/to/lane2-R1.fastq.gz   | path/to/lane2-R2.fastq.gz   |
 
 
