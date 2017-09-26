@@ -6,6 +6,8 @@ site_author: 'Yun Yan'
 theme: yeti
 extra:
     theme_inverse: true
+extra_css:
+    - css/extra.css
 
 markdown_extensions:
   - pymdownx.emoji:
