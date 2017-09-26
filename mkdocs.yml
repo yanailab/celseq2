@@ -1,21 +1,22 @@
 site_name: celseq2
-repo_url: https://github.com/yanailab/celseq2.git
-edit_uri: edit/master/docs/docs/
+repo_url: https://github.com/Puriney/celseq2
+edit_uri: edit/master/docs/
 site_description: 'User manual for celseq2, a Python framework for processing CEL-Seq2 data'
 site_author: 'Yun Yan'
-theme: yeti
-extra:
-    theme_inverse: true
-extra_css:
-    - css/extra.css
+theme: material
+# extra:
+#     theme_inverse: true
+# extra_css:
+#     - css/extra.css
 
 markdown_extensions:
   - pymdownx.emoji:
       emoji_generator: !!python/name:pymdownx.emoji.to_png
-  - pymdownx.betterem:
+  - pymdownx.betterem
   - fontawesome_markdown
   - toc(permalink=true)
-  - admonition:
+  - admonition
+  - codehilite
 
 pages:
   - Home: 'index.md'

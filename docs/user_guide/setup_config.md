@@ -1,6 +1,7 @@
 # Configuration
 
-Specify global parameters of CEL-Seq2 and `celseq2`.
+Learn how to setup a configuration file required by`celseq2` as input. The
+configuration file is global and can be reusable.
 
 ---
 
@@ -15,11 +16,20 @@ Global configuration file has 3 purposes:
 3. Configuration file is *reusable* as long as both experimental and
    bioinformatics protocol are applied on same type of species.
 
+## Create a configuration file from template
 
-## Example
+`celseq2` provides a bash command `new-configuration-file` to initiate
+a new configuration template so that user can fill in details.
+
+``` bash
+new-configuration-file -o /path/to/my_wonderful_config.yaml
+```
+
+## How to specify configuration
+
 Here is a [real
-example](https://github.com/Puriney/celseq2/blob/master/example/config.yaml) of
-global configuration file.
+example](https://github.com/Puriney/celseq2/blob/master/example/config.yaml)
+as global configuration.
 
 ```yaml
 ###########################
@@ -58,11 +68,11 @@ ALIGNER: 'bowtie2'
 ALN_QUAL_MIN: 0
 ```
 
-## Explanations
+## Explanations of key parameters
 
-- `BC_INDEX_FPATH`
+### `BC_INDEX_FPATH`
 
-Absolute file path to the space/tab separated file which saves all the sequences
+Absolute file path to a space/tab separated file which saves all the sequences
 for cell barcodes.
 
 Here are first 11 lines of the content of
@@ -82,9 +92,9 @@ Here are first 11 lines of the content of
 10  TCACAG
 ```
 
-- `UMI_LENGTH`, `BC_LENGTH`, `CUT_LENGTH`
+### `UMI_LENGTH`, `BC_LENGTH`, `CUT_LENGTH`
 
-CEL-Seq2 sequences in a pair-end manner. Read-1 records the sequences of UMI and
+CEL-Seq2 sequences in a pair-end manner. Read-1 records the sequences of UMIs and
 cell barcodes, while read-2 records the sequences of RNA transcripts. `celseq2`
 will cut a subsequence with length of `CUT_LENGTH` since the left-most end of
 read-2, which will be ready for alignment.
