@@ -10,7 +10,7 @@ Global configuration file has 3 purposes:
 
 1. Tell `celseq2` how CEL-Seq2 is performed. For example, what are the sequences
    of the cell barcodes in use?
-2. Specify bioinformatics details for `celseq2`. For example, what is the
+2. Specify bioinformatics details of `celseq2`. For example, what is the
    absolute path to the genome annotation on your computer?
 3. Configuration file is *reusable* as long as both experimental and
    bioinformatics protocol are applied on same type of species.
