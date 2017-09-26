@@ -1,18 +1,26 @@
-site_name: celseq2
-repo_url: https://github.com/Puriney/celseq2
-edit_uri: edit/master/docs/
+site_name: Manual for celseq2
+site_url: https://puriney.github.io/celseq2/
 site_description: 'User manual for celseq2, a Python framework for processing CEL-Seq2 data'
 site_author: 'Yun Yan'
+
+repo_name: Puriney/celseq2
+repo_url: https://github.com/Puriney/celseq2
+edit_uri: edit/master/docs/
+
 theme: material
-# extra:
-#     theme_inverse: true
+extra:
+    logo:
+      icon: 'code'
+    social:
+      - type: 'github'
+        link: https://github.com/Puriney
 # extra_css:
 #     - css/extra.css
 
 markdown_extensions:
   - pymdownx.emoji:
-      emoji_generator: !!python/name:pymdownx.emoji.to_png
-  - pymdownx.betterem
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
+  - pymdownx.betterem(smart_enable=all)
   - fontawesome_markdown
   - toc(permalink=true)
   - admonition
