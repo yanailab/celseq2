@@ -1,0 +1,22 @@
+/* Downloaded from https://github.com/mkdocs/mkdocs/blob/31de2edc37f0db02ebe9729c2b7d1d488023e4ee/docs/css/extra.css */
+div.col-md-9 h1:first-of-type {
+    text-align: center;
+    font-size: 60px;
+    font-weight: 300;
+}
+
+div.col-md-9 p:first-of-type {
+    text-align: center;
+}
+
+div.col-md-9 p.admonition-title:first-of-type {
+    text-align: left;
+}
+
+div.col-md-9 h1:first-of-type .headerlink {
+    display: none;
+}
+
+code.no-highlight {
+    color: black;
+}
