@@ -97,6 +97,14 @@ case study.
     above experiment-2, if it were believed that cells `1-19` are not in good
     shape during cell preparation and should be ignored.
 
+!!! info
+    `celseq2` understands the most human ways to specify cell barcode index. For
+    example, all the following formats are equivalent to `1-8`:
+
+    - `8-1`: reversed range
+    - `1,2,3,4-8`: individual + range
+    - `8,1,7-2,3-6`: redundancy is tolerant
+
 
 ### Example 1
 
