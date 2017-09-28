@@ -9,11 +9,14 @@ edit_uri: edit/master/docs/
 
 theme: material
 extra:
-    logo:
+  palette:
+    primary: 'teal'
+    accent: 'teal'
+  logo:
       icon: 'code'
-    social:
-      - type: 'github'
-        link: https://github.com/Puriney
+  social:
+    - type: 'github'
+      link: https://github.com/Puriney
 # extra_css:
 #     - css/extra.css
 
