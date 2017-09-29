@@ -27,29 +27,47 @@ def str2int(s):
     return(sorted(list(set(out))))
 
 
-def bc_dict_seq2id(bc_index_fpath):
+def bc_dict_seq2id(bc_index_fpath, col_seq=None):
     """ dict[barcode_seq] = barcode_id """
+    if col_seq is None:
+        col_seq = 0
     out = dict()
     with open(bc_index_fpath, 'rt') as fin:
-        next(fin)
+        next(fin)  # remove header
         out = map(lambda row: row.strip().split(), fin)
-        out = {row[1]: int(row[0]) for row in out}
+        # out = {row[1]: int(row[0]) for row in out}
+        row_num = 1
+        for row in out:
+            row_key = row[col_seq]
+            row_val = row_num
+            out[row_key] = row_val
+            row_num += 1
     return(out)
 
 
-def bc_dict_id2seq(bc_index_fpath):
+def bc_dict_id2seq(bc_index_fpath, col_seq=None):
     """ dict[barcode_id] =  barcode_seq"""
+    if col_seq is None:
+        col_seq = 0
     out = dict()
     with open(bc_index_fpath, 'rt') as fin:
-        next(fin)
+        next(fin)  # remove header
         out = map(lambda row: row.strip().split(), fin)
-        out = {int(row[0]): row[1] for row in out}
+        # out = {int(row[0]): row[1] for row in out}
+        row_num = 1
+        for row in out:
+            row_val = row[col_seq]
+            row_key = row_num
+            out[row_key] = row_val
+            row_num += 1
     return(out)
 
 
 def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
                    outdir,
-                   len_umi=6, len_bc=6, len_tx=35, bc_qual_min=10,
+                   start_umi=0, start_bc=6,
+                   len_umi=6, len_bc=6, len_tx=35,
+                   bc_qual_min=10,
                    is_gzip=True,
                    do_bc_rev_complement=False,
                    do_tx_rev_complement=False,
@@ -70,6 +88,7 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
 
     bc_fhout = dict()
     for bc_id, bc_seq in dict_bc_id2seq.items():
+        # bc_id = '[{}]'.format('-'.join(map(str, bc_id)))
         bc_fhout[bc_seq] = join_path(outdir,
                                      'BC-{}-{}.fastq'.format(bc_id, bc_seq))
     mkfolder(join_path(outdir, 'UNKNOWN'))
@@ -108,18 +127,21 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
 
         sample_counter['total'] += 1
 
-        if len(umibc_seq) < len_umi + len_bc:
+        umibc_idx = sorted(list(set(range(start_umi, start_umi + len_umi)) |
+                                set(range(start_bc, start_bc + len_bc))))
+
+        if len(umibc_seq) < len(umibc_idx):
             continue
 
-        umibc_min_qual = min(
-            (ord(c) - 33 for c in umibc_qualstr[:(len_umi + len_bc)]))
+        umibc_min_qual = min((ord(umibc_qualstr[i]) - 33 for i in umibc_idx))
+
         if umibc_min_qual < bc_qual_min:
             continue
 
         sample_counter['qualified'] += 1
 
-        umi, cell_bc = umibc_seq[0:len_umi], umibc_seq[len_umi:(
-            len_umi + len_bc)]
+        umi = umibc_seq[start_umi:(start_umi + len_umi)]
+        cell_bc = umibc_seq[start_bc:(start_bc + len_bc)]
         try:
             fhout = bc_fhout[cell_bc]
         except KeyError:
@@ -160,12 +182,14 @@ def write_demultiplexing(stats, dict_bc_id2seq, stats_fpath):
     except Exception as e:
         raise Exception(e)
     fh_stats.write('BC\tReads(#)\tReads(%)\n')
+
     for bc_id, bc_seq in dict_bc_id2seq.items():
-        formatter = '{:03d}-{}\t{:,}\t{:06.2f}\n'
+        # bc_id = '[{:04d}]'.format('-'.join(map(str, bc_id)))
+        formatter = '{:04d}-{}\t{}\t{:07.3f}\n'
         fh_stats.write(formatter.format(bc_id, bc_seq, stats[bc_seq],
                                         stats[bc_seq] / stats['total'] * 100))
 
-    formatter = '{}\t{}\t{:06.2f}\n'
+    formatter = '{}\t{}\t{:07.3f}\n'
     fh_stats.write(formatter.format('saved', stats['saved'],
                                     stats['saved'] / stats['total'] * 100))
     fh_stats.write(formatter.format('unknown', stats['unknown'],
@@ -184,6 +208,10 @@ def main():
     parser.add_argument('read2_fpath', type=str)
     parser.add_argument('--bc-index', type=str, metavar='FILENAME',
                         help='File path to barcode dictionary')
+    parser.add_argument('--bc-seq-column', type=int, metavar='N',
+                        default=0,
+                        help=('Column of cell barcode dictionary file '
+                              'which tells the actual sequences.'))
     parser.add_argument('--bc-index-used', type=str, metavar='string',
                         default='1-96',
                         help='Index of used barcode IDs (default=1-96)')
@@ -197,18 +225,26 @@ def main():
     parser.add_argument('--stats-file', metavar='STATFILE',
                         type=str, default='demultiplexing.log',
                         help='Statistics (default: demultiplexing.log)')
-    parser.add_argument('--umi-length', metavar='N', type=int, default=0,
-                        help='Length of UMI (default=0, e.g. no UMI)')
-    parser.add_argument('--bc-length', metavar='N', type=int, default=8,
-                        help='Length of CELSeq barcode (default=8)')
+    parser.add_argument('--umi-start-position',
+                        metavar='N', type=int, default=0,
+                        help=('Start index of UMI on R1. '
+                              'Default: 0. (0-based).'))
+    parser.add_argument('--umi-length', metavar='N', type=int, default=6,
+                        help='Length of UMI (default=6)')
+    parser.add_argument('--bc-start-position',
+                        metavar='N', type=int, default=6,
+                        help=('Start index of cell barcode on R1. '
+                              'Default: 6. (0-based).'))
+    parser.add_argument('--bc-length', metavar='N', type=int, default=6,
+                        help='Length of CELSeq barcode (default=6)')
     parser.add_argument('--cut-length', metavar='N', type=int, default=35,
-                        help='Length of mapped read (default=35)')
+                        help='Length of read on R2 to be mapped. (default=35)')
     parser.add_argument('--verbose', dest='verbose', action='store_true')
     parser.set_defaults(verbose=False)
 
     args = parser.parse_args()
 
-    bc_dict = bc_dict_id2seq(args.bc_index)
+    bc_dict = bc_dict_id2seq(args.bc_index, args.bc_seq_column)
 
     if args.bc_index_used != '1-96':
         bc_index_used = str2int(args.bc_index_used)
@@ -219,6 +255,8 @@ def main():
     out = demultiplexing(read1_fpath=args.read1_fpath,
                          read2_fpath=args.read2_fpath,
                          outdir=args.out_dir, dict_bc_id2seq=bc_dict,
+                         start_umi=args.umi_start_position,
+                         start_bc=args.bc_start_position,
                          len_umi=args.umi_length,
                          len_bc=args.bc_length,
                          len_tx=args.cut_length,

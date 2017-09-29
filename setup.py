@@ -18,6 +18,8 @@ install_requires = [
     'pyyaml>=3.12, <4',
     'HTSeq>=0.9',
     'pytest==3.2.2',
+    'pandas>=0.20.0',
+    'numpy>=1.12.0',
 ]
 
 # do not require installation if built by ReadTheDocs
@@ -155,6 +157,8 @@ setup(
              'celseq2.dummy_CELSeq2_reads:main'),
             ('celseq2-test = '
              'celseq2.dummy_celseq2_test:main'),
+            ('celseq2-diagnose = '
+             'celseq2.diagnose:main')
         ],
     },
 
