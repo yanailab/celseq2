@@ -27,6 +27,9 @@ SAMPLE_TABLE = cook_sample_sheet(SAMPLE_TABLE_FPATH)  # ''
 # '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
 BC_INDEX_FPATH = config.get('BC_INDEX_FPATH', None)
 BC_IDs_DEFAULT = config.get('BC_IDs_DEFAULT', None)  # '1-96'
+BC_SEQ_COLUMN = config.get('BC_SEQ_COLUMN', None)
+UMI_START_POSITION = config.get('UMI_START_POSITION', None)
+BC_START_POSITION = config.get('BC_START_POSITION', None)
 UMI_LENGTH = config.get('UMI_LENGTH', None)  # 6
 BC_LENGTH = config.get('BC_LENGTH', None)  # 6
 
@@ -185,8 +188,12 @@ rule combo_demultiplexing:
                             itemr1,
                             itemr2,
                             "--bc-index {}".format(BC_INDEX_FPATH),
+                            "--bc-seq-column {}".format(BC_SEQ_COLUMN),
                             "--bc-index-used {}".format(itembc),
                             "--min-bc-quality {}".format(FASTQ_QUAL_MIN_OF_BC),
+                            "--umi-start-position {}".format(
+                                UMI_START_POSITION),
+                            "--bc-start-position {}".format(BC_START_POSITION),
                             "--umi-length {}".format(UMI_LENGTH),
                             "--bc-length {}".format(BC_LENGTH),
                             "--cut-length {}".format(CUT_LENGTH),
