@@ -246,9 +246,8 @@ def main():
 
     bc_dict = bc_dict_id2seq(args.bc_index, args.bc_seq_column)
 
-    if args.bc_index_used != '1-96':
-        bc_index_used = str2int(args.bc_index_used)
-        bc_dict = {x: bc_dict.get(x, None) for x in bc_index_used}
+    bc_index_used = str2int(args.bc_index_used)
+    bc_dict = {x: bc_dict.get(x, None) for x in bc_index_used}
 
     print_logger('Demultiplexing starts {}--{} ...'.format(args.read1_fpath,
                                                            args.read2_fpath))
