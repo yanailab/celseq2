@@ -123,7 +123,7 @@ setup(
     package_data={
         'celseq2': [
             'template/*',  # config.yaml, etc
-            'workflow/*'  # snakemake workflow
+            'workflow/*',  # snakemake workflow
             'demo/*',  # demo data for running dummy analysis
         ]
     },
