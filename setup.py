@@ -160,9 +160,9 @@ setup(
             ('celseq2-test = '
              'celseq2.dummy_celseq2_test:main'),
             ('celseq2-diagnose = '
-             'celseq2.diagnose:main')
+             'celseq2.diagnose:main'),
             ('celseq2-to-st = '
-             'celseq2.support.st_pipeline:main')
+             'celseq2.support.st_pipeline:main'),
         ],
     },
 
