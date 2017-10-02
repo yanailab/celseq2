@@ -21,23 +21,23 @@ def celseq2stpipeline(celseq2_hdf5, spatial_map, out):
             dict_spatial_seq2xy[row[0]] = (row[1], row[2])
 
     expr = pd.read_hdf(celseq2_hdf5, 'table')  # genes x cells
-    genes = expr.index.values
-    colnames = expr.columns.values
 
-    fhout.write('{}\t{}\n'.format('spot', '\t'.join(genes)))  # header
+    # df.loc[(df.sum(axis=1) != 0), (df.sum(axis=0) != 0)]
+    expr_valid = expr.loc[(expr.sum(axis=1) != 0), (expr.sum(axis=0) != 0)]
+    genes = expr_valid.index.values
+    colnames = expr_valid.columns.values
+    fhout.write('{}\t{}\n'.format('', '\t'.join(genes)))  # header
 
     for colname in colnames:
         spot_seq = colname.split('-')[-1]
-        spot_expr = expr[colname].values
-        if sum(spot_expr) == 0:
-            continue
+        spot_expr = expr_valid[colname].values
         spot_xy = dict_spatial_seq2xy.get(spot_seq, None)
         if not spot_xy:
             continue
         spot_xy = 'x'.join(map(str, spot_xy))
         fhout.write('{}\t{}\n'.format(
             spot_xy,
-            '\t'.join(map(int, spot_expr))))
+            '\t'.join(map(str, spot_expr))))
 
     fhout.close()
 
