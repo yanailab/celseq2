@@ -33,13 +33,17 @@ def bc_dict_seq2id(bc_index_fpath, col_seq=None):
         col_seq = 0
     out = dict()
     with open(bc_index_fpath, 'rt') as fin:
-        next(fin)  # remove header
-        out = map(lambda row: row.strip().split(), fin)
+        # next(fin)  # remove header
+        # out = list(map(lambda row: row.strip().split(), fin))
         # out = {row[1]: int(row[0]) for row in out}
         row_num = 1
-        for row in out:
-            row_key = row[col_seq]
-            row_val = row_num
+        for row in fin:
+            if row.startswith('#'):
+                continue
+            row = row.strip().split()
+            print('{}:{}'.format(row_num, row))
+            row_val = row[col_seq]
+            row_key = row_num
             out[row_key] = row_val
             row_num += 1
     return(out)
@@ -51,11 +55,15 @@ def bc_dict_id2seq(bc_index_fpath, col_seq=None):
         col_seq = 0
     out = dict()
     with open(bc_index_fpath, 'rt') as fin:
-        next(fin)  # remove header
-        out = map(lambda row: row.strip().split(), fin)
+        # next(fin)  # remove header
+        # out = map(lambda row: row.strip().split(), fin)
         # out = {int(row[0]): row[1] for row in out}
         row_num = 1
-        for row in out:
+        for row in fin:
+            if row.startswith('#'):
+                continue
+            row = row.strip().split()
+            print('{}:{}'.format(row_num, row))
             row_val = row[col_seq]
             row_key = row_num
             out[row_key] = row_val

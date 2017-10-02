@@ -20,6 +20,7 @@ install_requires = [
     'pytest==3.2.2',
     'pandas>=0.20.0',
     'numpy>=1.12.0',
+    'tables>=3.4.2',
 ]
 
 # do not require installation if built by ReadTheDocs
@@ -61,6 +62,7 @@ class CleanCommand(Command):
             raise OSError(error_msg)
         else:
             os.system('rm -rf ./dist ./build ./*.egg-info ')
+
 
 setup(
     name=name,
@@ -159,6 +161,8 @@ setup(
              'celseq2.dummy_celseq2_test:main'),
             ('celseq2-diagnose = '
              'celseq2.diagnose:main')
+            ('celseq2-to-st = '
+             'celseq2.support.st_pipeline:main')
         ],
     },
 
