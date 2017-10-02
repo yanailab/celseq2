@@ -35,6 +35,7 @@ pages:
     - 'Setup configuration': 'user_guide/setup_config.md'
     - 'Specify experiment table': 'user_guide/experiment_table.md'
     - 'Launch pipeline': 'user_guide/launch_pipeline.md'
+    - 'Storage management': 'user_guide/storage.md'
   - About:
     - 'Reproducibility': 'about/reproducibility.md'
     - 'Performance': 'about/performance.md'

@@ -1,6 +1,6 @@
 # Run pipeline
 
-Learn about how it is easy to launch pipeline in both local computer and server.
+Learn about how it is easy to launch pipeline in all the ways users want.
 
 ---
 
