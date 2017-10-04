@@ -41,6 +41,8 @@ BOWTIE2 = config.get('BOWTIE2', None)  # '/local/apps/bowtie2/2.3.1/bowtie2'
 ## Annotations ##
 # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
 GFF = config.get('GFF', None)
+FEATURE_ID = config.get('FEATURE_ID', 'gene_name')
+FEATURE_CONTENT = config.get('FEATURE_CONTENT', 'exon')
 
 ## Demultiplexing ##
 FASTQ_QUAL_MIN_OF_BC = config.get('FASTQ_QUAL_MIN_OF_BC', None)  # 10
@@ -237,8 +239,8 @@ rule cook_annotation:
         flag = touch('_done_annotation'),
     message: 'Cooking Annotation'
     run:
-        _ = cook_anno_model(GFF, feature_atrr='gene_id',
-                            feature_type='exon',
+        _ = cook_anno_model(GFF, feature_atrr=FEATURE_ID,
+                            feature_type=FEATURE_CONTENT,
                             stranded=True,
                             dumpto=output.anno,
                             verbose=verbose)
