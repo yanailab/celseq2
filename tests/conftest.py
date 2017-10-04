@@ -52,6 +52,8 @@ def instance_demultiplex_stats(tmpdir_factory, instance_celseq2_data):
         read2_fpath=str(r2_gz),
         outdir=fdir,
         dict_bc_id2seq=dict_bc_id2seq,
+        start_umi=0,
+        start_bc=6,
         len_umi=6,
         len_bc=6,
         len_tx=35,
