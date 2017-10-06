@@ -1,7 +1,7 @@
 ## Overview
 
 This is `celseq2`, a Python framework for generating the UMI count matrix
-from CEL-Seq2 [^Hashimshony2016] sequencing data. We believe data digestion
+from CEL-Seq2 [\*] sequencing data. We believe data digestion
 should be automated, and it should be done in a manner not just computational
 efficient, but also user-friendly and developer-friendly.
 
@@ -145,7 +145,7 @@ expr/
         └── expr.h5
 ```
 
-Results of <kbd>item-X</kbd> are useful to access technical variation when FASTQ
+Results of <kbd>item-X</kbd> are useful to assess technical variation when FASTQ
 files from multiple lanes, or technical/biological replicates are present.
 
 ## About
@@ -154,8 +154,9 @@ Authors: See <https://github.com/yanailab/celseq2/blob/master/AUTHORS>
 
 License: See <https://github.com/yanailab/celseq2/blob/master/LICENSE>
 
+---
 
-[^Hashimshony2016]: Hashimshony, T. et al. CEL-Seq2: sensitive highly-
+[\*] Hashimshony, T. et al. CEL-Seq2: sensitive highly-
 multiplexed single-cell RNA-Seq. Genome Biol. 17, 77 (2016).
 <https://doi.org/10.1186/s13059-016-0938-8>
 

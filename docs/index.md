@@ -145,7 +145,7 @@ expr/
         └── expr.h5
 ```
 
-Results of <kbd>item-X</kbd> are useful to access technical variation when FASTQ
+Results of <kbd>item-X</kbd> are useful to assess technical variation when FASTQ
 files from multiple lanes, or technical/biological replicates are present.
 
 ## About
