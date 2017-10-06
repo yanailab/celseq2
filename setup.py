@@ -82,18 +82,17 @@ setup(
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Development Status :: 3 - Alpha',
-
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
 
-        'License :: Other/Proprietary License',
-
-        'Programming Language :: Python :: 3.5',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3 :: Only',
     ],
 
-    keywords='single-cell gene expression pipeline processing',
+    keywords='CEL-Seq2 single-cell RNA-seq expression pipeline processing',
 
     # packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     packages=find_packages(exclude=['docs', 'tests*']),

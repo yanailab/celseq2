@@ -16,9 +16,9 @@ pip install ./
 ## Quick Start
 
 Running `celseq2` pipeline is as easy as 1-2-3. Below is the visualization of
-the experiment design behind the
+the experiment design as same as the
 [sample sheet](https://github.com/yanailab/CEL-Seq-pipeline/blob/133912cd4ceb20af0c67627ab883dfce8b9668df/sample_sheet_example.txt)
-used in previous pipeline as example.
+used in last generation of the pipeline ([CEL-Seq-pipeline](https://github.com/yanailab/CEL-Seq-pipeline)) as example.
 
 ![experiment-old-pipeline-visualize](https://i.imgur.com/ntJVTYM.gif)
 
@@ -101,15 +101,16 @@ celseq2 --config-file /path/to/wonderful_CEL-Seq2_config.yaml \
 
 Read ["Launch Pipeline"](https://puriney.github.io/celseq2/user_guide/launch_pipeline/)
 for full instructions to see how to submit jobs to cluster, or preview how many
-tasks are going to scheduled.
+tasks are going to be scheduled.
 
-## Result
+### Results
+
 All the results are saved under <kbd>/path/to/result_dir</kbd> that user
 specified, which has folder structure:
 
 ```
 ├── annotation
-├── expr                    # <== Here is the UMI count matrix
+├── expr                  # <== Here saves all the UMI count matrices
 ├── input
 ├── small_diagnose
 ├── small_fq
@@ -125,48 +126,34 @@ saved in both CSV and HDF5 format and exported to <kbd>expr/</kbd> folder.
 ```
 expr/
 ├── wonderful_experiment1
-│   ├── expr.csv            # <== UMI count matrix (CSV format) for blue plate
+│   ├── expr.csv          # <== UMI count matrix for cells denoted as squares
 │   ├── expr.h5
-│   └── item-1
+│   ├── item-1
+│   │   ├── expr.csv
+│   │   └── expr.h5
+│   └── item-3
 │       ├── expr.csv
 │       └── expr.h5
 └── wonderful_experiment2
-    ├── expr.csv            # <== UMI count matrix (CSV format) for orange plate
+    ├── expr.csv          # <== UMI count matrix for cells denoted as circles
     ├── expr.h5
-    └── item-2
+    ├── item-2
+    │   ├── expr.csv
+    │   └── expr.h5
+    └── item-4
         ├── expr.csv
         └── expr.h5
 ```
 
-Results of <kbd>item-X</kbd> are useful when user has FASTQ files from multiple
-lanes, or technical/biological replicates. Read [Real Example](https://gitlab.com/Puriney/celseq2/wikis/Examples) for further
-details about how to specify experiment table and fetch results when more
-complexed (or real) experiment design happens.
+Results of <kbd>item-X</kbd> are useful to access technical variation when FASTQ
+files from multiple lanes, or technical/biological replicates are present.
 
+## About
 
-## Storage management
+Authors: See <https://github.com/yanailab/celseq2/blob/master/AUTHORS>
 
-To reduce the storage of project, it is suggested to get rid of intermediate
-files, in particular FASTQ and SAM files.
+License: See <https://github.com/yanailab/celseq2/blob/master/LICENSE>
 
-Remove generated FASTQ and SAM files:
-
-```
-celseq2 --config-file /path/to/wonderful_CEL-Seq2_config.yaml \
-    --experiment-table /path/to/wonderful_experiment_table.txt \
-    --output-dir /path/to/result_dir \
-    -j 10 clean_FQ_SAM
-```
-
-Alternatively, user can gzip FASTQ and perform SAM2BAM:
-
-```
-celseq2-slim --project-dir /path/to/result_dir -n
-celseq2-slim --project-dir /path/to/result_dir
-```
-
-
----
 
 [^Hashimshony2016]: Hashimshony, T. et al. CEL-Seq2: sensitive highly-
 multiplexed single-cell RNA-Seq. Genome Biol. 17, 77 (2016).
