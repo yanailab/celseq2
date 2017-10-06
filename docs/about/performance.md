@@ -1,5 +1,7 @@
 # Performance
 
+We believe data digestion should be automated, and it should be done in a
+computational efficient manner :rocket:.
 
 ## Introduction
 
