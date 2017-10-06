@@ -7,16 +7,20 @@ repo_name: Puriney/celseq2
 repo_url: https://github.com/Puriney/celseq2
 edit_uri: edit/master/docs/
 
+copyright: '&copy 2017 Yun Yan'
+license: 'MIT'
 theme: material
 extra:
   palette:
     primary: 'teal'
     accent: 'teal'
   logo:
-      icon: 'code'
+      icon: 'home'
   social:
     - type: 'github'
       link: https://github.com/Puriney
+    - type: 'link'
+      link: https://yanailab.org
 # extra_css:
 #     - css/extra.css
 
@@ -39,8 +43,8 @@ pages:
     - 'Storage management': 'user_guide/storage.md'
   - About:
     - 'Reproducibility': 'about/reproducibility.md'
-    - 'Performance': 'about/performance.md'
     - 'User experience': 'about/user_friendly.md'
+    - 'Performance': 'about/performance.md'
     - 'Support other methods': 'about/support_others.md'
     - 'Release note': 'about/release_note.md'
   - FAQ: 'faq.md'
