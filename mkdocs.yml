@@ -23,8 +23,8 @@ extra:
       link: https://yanailab.org
   feature:
     tabs: true
-  # font:
-  #   text: 'Open Sans'
+  font:
+    text: 'Open Sans'
   #   code: 'Robote Mono'
 
 
