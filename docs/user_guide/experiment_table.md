@@ -12,10 +12,11 @@ Experiment table has 3 purposes:
 2. Translate the overall design of experiments to format that `celseq2` can
    understand, so that `celseq2` can generate the expected layout of UMI-count
    matrix.
-3. Provide an user-friendly way to finish the two above goals. Experiment table
-   is in particular convenient for complexed experiment design where more than
-   one experiment conditions with (or without) biological/technical replicates
-   are present.
+3. Provide an user-friendly way to finish the two above goals.
+
+Experiment table is in particular convenient for complexed experiment design
+   where more than one experiment conditions with (or without)
+   biological/technical replicates present.
 
 ## Create an experiment table from template
 

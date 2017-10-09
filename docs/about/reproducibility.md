@@ -5,6 +5,8 @@ self-consistent manner :performing_arts:.
 
 ---
 
+## Introduction
+
 `celseq2` is not the first tool developed by Yanai lab to process CEL-Seq2 data,
 but `CEL-Seq-pipeline` (see [codes](https://github.com/yanailab/CEL-Seq-pipeline)) is.
 

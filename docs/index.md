@@ -5,7 +5,7 @@ from CEL-Seq2 [^Hashimshony2016] sequencing data. We believe data digestion
 should be automated, and it should be done in a manner not just computational
 efficient, but also user-friendly and developer-friendly.
 
-## Install `celseq2`
+## Installation
 
 ``` bash
 git clone git@github.com:yanailab/celseq2.git
@@ -145,7 +145,7 @@ expr/
         └── expr.h5
 ```
 
-Results of <kbd>item-X</kbd> are useful to assess technical variation when FASTQ
+Results of <kbd>item-X</kbd> are useful to assess variation when FASTQ
 files from multiple lanes, or technical/biological replicates are present.
 
 ## About

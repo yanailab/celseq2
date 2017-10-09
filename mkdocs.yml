@@ -12,8 +12,8 @@ license: 'MIT'
 theme: material
 extra:
   palette:
-    primary: 'teal'
-    accent: 'teal'
+    primary: 'deep purple'
+    accent: 'deep purple'
   logo:
       icon: 'home'
   social:
@@ -21,6 +21,13 @@ extra:
       link: https://github.com/Puriney
     - type: 'link'
       link: https://yanailab.org
+  feature:
+    tabs: true
+  # font:
+  #   text: 'Open Sans'
+  #   code: 'Robote Mono'
+
+
 # extra_css:
 #     - css/extra.css
 
