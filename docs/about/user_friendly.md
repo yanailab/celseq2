@@ -100,8 +100,8 @@ instructions.
 
 ## Easy to request resources
 
-It is straightforward to run the pipeline of celseq2 by submitting jobs to
-cluster, as celseq2 is built on top of snakemake which is a powerful workflow
+It is straightforward to run the pipeline of `celseq2` by submitting jobs to
+cluster, as `celseq2` is built on top of `snakemake` which is a powerful workflow
 management framework.
 
 For example, user could run the following command to submit jobs to computing

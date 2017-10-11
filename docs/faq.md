@@ -12,7 +12,7 @@
 
 :star: Thanks for your interest. We suggest follow "Guidelines to submit a Pull
 Request" of `mxnet`
-(see [here](https://mxnet.incubator.apache.org/community/contribute.html#guidelines-to-submit-a-pull-request])).
+(see [here](https://github.com/apache/incubator-mxnet/blob/b6b8da0ac2b1ef8b84089458c757ce8b19aab0d7/docs/community/contribute.md#guidelines-to-submit-a-pull-request])).
 
 
 :question: How to contribute to user manuals?

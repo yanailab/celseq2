@@ -20,7 +20,8 @@ the experiment design as same as the
 [sample sheet](https://github.com/yanailab/CEL-Seq-pipeline/blob/133912cd4ceb20af0c67627ab883dfce8b9668df/sample_sheet_example.txt)
 used in last generation of the pipeline ([CEL-Seq-pipeline](https://github.com/yanailab/CEL-Seq-pipeline)) as example.
 
-![experiment-old-pipeline-visualize](https://i.imgur.com/ntJVTYM.gif)
+<!-- ![experiment-old-pipeline-visualize](https://i.imgur.com/ntJVTYM.gif) -->
+<img src="https://i.imgur.com/ntJVTYM.gif" height="400">
 
 The user had two biological samples which could come from two different
 experiments, two time-points, two types of tissues, or even two labs. They were
