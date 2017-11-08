@@ -14,10 +14,10 @@ description = ('A Python Package for Processing '
                'CEL-Seq2 RNA-Seq Data.')
 
 install_requires = [
-    'snakemake==4.0.0',
+    'snakemake>=4.0.0',
     'pyyaml>=3.12, <4',
     'HTSeq>=0.9',
-    'pytest==3.2.2',
+    'pytest>=3.2.2',
     'pandas>=0.20.0',
     'numpy>=1.12.0',
     'tables>=3.4.2',
