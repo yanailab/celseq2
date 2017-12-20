@@ -8,6 +8,17 @@
 :fa-star: **Features**
  -->
 
+---
+
+## :fa-flag-checkered: **v0.4.1**
+
+:fa-calendar: **2017-12-20**
+
+:fa-star: **Features**
+
+- Support `STAR` aligner.
+- Update docs.
+
 
 ---
 
