@@ -221,7 +221,8 @@ if ALIGNER == 'bowtie2':
             fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
         output:
             sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam')
-        threads: num_threads
+        params:
+            threads = num_threads
         log:
             join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
                       'Align-Bowtie2_Cell-{bc}.log')
@@ -229,13 +230,15 @@ if ALIGNER == 'bowtie2':
             shell(
                 """
                 {BOWTIE2} \
-                -p {threads} \
+                -p {params.threads} \
                 -x {BOWTIE2_INDEX_PREFIX} \
                 -U {input.fq} \
                 -S {output.sam} 2>{log} \
                 --seed 42
                 """)
 elif ALIGNER == 'star':
+    assert STAR
+    assert STAR_INDEX_DIR
     rule align_star:
         input:
             fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
@@ -243,16 +246,19 @@ elif ALIGNER == 'star':
             sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
             starsam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}',
                                 'Aligned.out.sam'),
-        threads: num_threads
+        params:
+            threads = num_threads
         run:
-            star_prefix = join(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}', '')
+            star_prefix = join_path(
+                DIR_PROJ, SUBDIR_ALIGN, wildcards.itemid, wildcards.bc, '')
             cmd = 'STAR '
             cmd += ' --runRNGseed 42 '
-            cmd += ' --runThreadN {threads} '
+            cmd += ' --runThreadN {params.threads} '
             cmd += ' --genomeDir {STAR_INDEX_DIR} '
             # cmd += ' --readFilesCommand zcat '
             cmd += ' --readFilesIn {input.fq} '
             cmd += ' --outFileNamePrefix {star_prefix} '
+            # cmd += ' --outSAMmultNmax 1 '
             shell(cmd)
             shell('ln -s {output.starsam} {output.sam} ')
             shell('touch -h {output.sam} ')
@@ -262,7 +268,7 @@ else:
 
 ## HT-seq Count UMI ##
 rule cook_annotation:
-    input: GFF
+    input: GFF,
     output:
         anno = join_path(DIR_PROJ, SUBDIR_ANNO,
                          base_name(GFF) + '.pickle'),
