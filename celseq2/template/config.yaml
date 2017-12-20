@@ -8,8 +8,12 @@ BC_START_POSITION: 6
 BC_LENGTH: 6
 
 ## Tools ##
+# 'bowtie2' 'star'
+ALIGNER: 'bowtie2'
 BOWTIE2_INDEX_PREFIX: '/absolute/path/to/bowtie2_index'
 BOWTIE2: '/absolute/path/to/bowtie2'
+STAR_INDEX_DIR: '/absolute/path/to/star/folder'
+STAR: '/absolute/path/to/star'
 
 ## Annotations ##
 # Path to GTF/GFF file
@@ -23,7 +27,6 @@ FASTQ_QUAL_MIN_OF_BC: 10
 CUT_LENGTH: 35
 
 ## Alignment ##
-ALIGNER: 'bowtie2'
 
 ## UMI Count ##
 ALN_QUAL_MIN: 0

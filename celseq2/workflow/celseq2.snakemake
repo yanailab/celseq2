@@ -37,7 +37,8 @@ BC_LENGTH = config.get('BC_LENGTH', None)  # 6
 # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
 BOWTIE2_INDEX_PREFIX = config.get('BOWTIE2_INDEX_PREFIX', None)
 BOWTIE2 = config.get('BOWTIE2', None)  # '/local/apps/bowtie2/2.3.1/bowtie2'
-
+STAR_INDEX_DIR = config.get('STAR_INDEX_DIR', None)
+STAR = config.get('STAR', None)
 ## Annotations ##
 # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
 GFF = config.get('GFF', None)
@@ -48,7 +49,7 @@ FEATURE_CONTENT = config.get('FEATURE_CONTENT', 'exon')
 FASTQ_QUAL_MIN_OF_BC = config.get('FASTQ_QUAL_MIN_OF_BC', None)  # 10
 CUT_LENGTH = config.get('CUT_LENGTH', None)  # 35
 ## Alignment ##
-ALIGNER = config.get('ALIGNER', None)  # 'bowtie2'
+ALIGNER = config.get('ALIGNER', None)  # 'bowtie2', 'star'
 
 ## UMI Count ##
 ALN_QUAL_MIN = config.get('ALN_QUAL_MIN', None)  # 0
@@ -132,6 +133,10 @@ rule all:
         alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
                                      '{itemid}', 'alignment_diagnose.csv'),
                            itemid=item_names),
+        # Annotation
+        anno = join_path(DIR_PROJ, SUBDIR_ANNO,
+                         base_name(GFF) + '.pickle'),
+
     output:
         touch('_done_UMI')
     run:
@@ -209,26 +214,51 @@ rule combo_demultiplexing:
 
 
 ## Alignment ##
-rule align_bowtie2:
-    input:
-        fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
-    output:
-        sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam')
-    threads: num_threads
-    log:
-        join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
-                  'Align-Bowtie2_Cell-{bc}.log')
-    run:
-        shell(
-            """
-            {BOWTIE2} \
-            -p {threads} \
-            -x {BOWTIE2_INDEX_PREFIX} \
-            -U {input.fq} \
-            -S {output.sam} 2>{log} \
-            --seed 42
-            """)
+assert (ALIGNER), 'Error: Specify aligner.'
+if ALIGNER == 'bowtie2':
+    rule align_bowtie2:
+        input:
+            fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
+        output:
+            sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam')
+        threads: num_threads
+        log:
+            join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
+                      'Align-Bowtie2_Cell-{bc}.log')
+        run:
+            shell(
+                """
+                {BOWTIE2} \
+                -p {threads} \
+                -x {BOWTIE2_INDEX_PREFIX} \
+                -U {input.fq} \
+                -S {output.sam} 2>{log} \
+                --seed 42
+                """)
+elif ALIGNER == 'star':
+    rule align_star:
+        input:
+            fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
+        output:
+            sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
+            starsam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}',
+                                'Aligned.out.sam'),
+        threads: num_threads
+        run:
+            star_prefix = join(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}', '')
+            cmd = 'STAR '
+            cmd += ' --runRNGseed 42 '
+            cmd += ' --runThreadN {threads} '
+            cmd += ' --genomeDir {STAR_INDEX_DIR} '
+            # cmd += ' --readFilesCommand zcat '
+            cmd += ' --readFilesIn {input.fq} '
+            cmd += ' --outFileNamePrefix {star_prefix} '
+            shell(cmd)
+            shell('ln -s {output.starsam} {output.sam} ')
+            shell('touch -h {output.sam} ')
 
+else:
+    print('Error: Unknown aligner', flush=True)
 
 ## HT-seq Count UMI ##
 rule cook_annotation:
