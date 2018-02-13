@@ -109,9 +109,24 @@ aln_diagnose_item = ["_unmapped",
 
 workdir: DIR_PROJ
 
+rule Count_Matrix:
+    input:
+        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+                     expid=list(set(sample_list))),
+        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+                     expid=list(set(sample_list))),
+        # alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
+        #                              '{itemid}', 'alignment_diagnose.csv'),
+        #                    itemid=item_names),
+    output:
+        touch('_done_UMI')
+    message: 'Finished counting UMI-count matrix.'
+    run:
+        print_logger('UMI-count matrix is saved at {}'.format(input.csv))
 
-rule all:
-    message: 'Finished UMI matrix'
+
+rule celseq2:
+    message: 'Finished Entire Pipeline.'
     input:
         # Annotation
         anno = join_path(DIR_PROJ, SUBDIR_ANNO,
@@ -143,7 +158,7 @@ rule all:
                            itemid=item_names),
 
     output:
-        touch('_done_UMI')
+        touch('_done_celseq2')
     run:
         if glob.glob('celseq2_job*.sh*'):
             shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
@@ -151,13 +166,12 @@ rule all:
         print_logger('Expression UMI matrix is saved at {}'.format(input.csv))
 
         if ALIGNER == 'star':
-            shell('rm {}'.format(rules.star_load_genome.output.flag))
+            shell('rm {}'.format(rules.star_load_genome.output))
             print('Free memory loaded by STAR', flush=True)
             cmd  = 'STAR '
             cmd += '--genomeLoad Remove '
             cmd += '--genomeDir {STAR_INDEX_DIR} '
             shell(cmd)
-
 
 rule setup_dir:
     input: SAMPLE_TABLE_FPATH
@@ -203,8 +217,8 @@ rule cook_annotation:
 # Combo-demultiplexing
 rule combo_demultiplexing:
     input:
-        flag1 = '_done_setupdir',
         flag2 = '_done_annotation',
+        # flag1 = '_done_setupdir',
     output:
         dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq')),
     message: 'Performing combo-demultiplexing'
@@ -247,6 +261,8 @@ rule combo_demultiplexing:
 
 ## Alignment ##
 assert (ALIGNER), 'Error: Specify aligner.'
+assert (ALIGNER in ['bowtie2', 'star']), 'Error: Unknown aligner.'
+
 if ALIGNER == 'bowtie2':
     rule align_bowtie2:
         input:
@@ -268,25 +284,26 @@ if ALIGNER == 'bowtie2':
                 -S {output.sam} 2>{log} \
                 --seed 42
                 """)
-elif ALIGNER == 'star':
-    assert STAR
-    assert STAR_INDEX_DIR
 
+if ALIGNER == 'star':
+    assert STAR_INDEX_DIR
     rule star_load_genome:
-        # input:
-        #     flag = '_done_annotation',
+        input:
+            flag = '_done_annotation',
         output:
-            flag = '_done_star_genome_loaded',
+            touch('_done_star_genome_loaded')
         message: 'Loading genome to memory for STAR'
+        shadow: "shallow"
         run:
             cmd = 'STAR '
             cmd += '--genomeLoad LoadAndExit '
             cmd += '--genomeDir {STAR_INDEX_DIR} '
             shell(cmd)
-            shell('touch {output.flag} ')
+            # shell('touch {output.flag} ')
             # shell('echo loaded >> {output.flag} ')
 
-
+if ALIGNER == 'star':
+    assert STAR
     rule align_star:
         input:
             flag = '_done_star_genome_loaded',
@@ -312,9 +329,6 @@ elif ALIGNER == 'star':
             shell(cmd)
             shell('ln -s {output.starsam} {output.sam} ')
             shell('touch -h {output.sam} ')
-
-else:
-    print('Error: Unknown aligner', flush=True)
 
 
 rule count_umi:
@@ -386,19 +400,6 @@ rule summarize_umi_matrix_per_item:
 
 
 # - merge umi-count using *_umiset.pkl -> correct umi count per experiment/plate
-rule umi_matrix:
-    input:
-        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
-                     expid=list(set(sample_list))),
-        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
-                     expid=list(set(sample_list))),
-        alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
-                                     '{itemid}', 'alignment_diagnose.csv'),
-                           itemid=item_names),
-
-    message: 'UMI matrix per experiment'
-
-
 rule summarize_umi_matrix_per_experiment:
     input:
         gff = join_path(DIR_PROJ, SUBDIR_ANNO,

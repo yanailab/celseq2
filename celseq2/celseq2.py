@@ -18,6 +18,7 @@ Select top-used parameters from snakemake.snakemake():
     * -T
     * -w 1800 # 30min
     * --keep-going
+    * --restart-times 1
 
 Select optional parameters from snakemake.snakemake():
     * --ri v.s. --ii
@@ -127,6 +128,7 @@ def main():
         latency_wait=1800,
         jobname="celseq2_job.{rulename}.{jobid}.sh",
         keepgoing=True,
+        restart_times=1,
 
         dryrun=args.dryrun,
         lock=not args.nolock,
