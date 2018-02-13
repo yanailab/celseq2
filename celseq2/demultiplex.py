@@ -41,7 +41,7 @@ def bc_dict_seq2id(bc_index_fpath, col_seq=None):
             if row.startswith('#'):
                 continue
             row = row.strip().split()
-            print('{}:{}'.format(row_num, row))
+            # print('{}:{}'.format(row_num, row))
             row_val = row[col_seq]
             row_key = row_num
             out[row_key] = row_val
@@ -63,7 +63,7 @@ def bc_dict_id2seq(bc_index_fpath, col_seq=None):
             if row.startswith('#'):
                 continue
             row = row.strip().split()
-            print('{}:{}'.format(row_num, row))
+            # print('{}:{}'.format(row_num, row))
             row_val = row[col_seq]
             row_key = row_num
             out[row_key] = row_val

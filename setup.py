@@ -112,6 +112,7 @@ setup(
             # 'sphinx-argparse',
             # 'mock',
             'mkdocs',
+            'mkdocs-material',
             'fontawesome_markdown',
             'mkdocs-bootswatch',
             'pymdown-extensions',
