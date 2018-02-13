@@ -113,12 +113,20 @@ workdir: DIR_PROJ
 rule all:
     message: 'Finished UMI matrix'
     input:
+        # Annotation
+        anno = join_path(DIR_PROJ, SUBDIR_ANNO,
+                         base_name(GFF) + '.pickle'),
+        # anno = rules.cook_annotation.output.anno,
         # Expression Matrix per experiment/sample/plate
+        # csv = rules.summarize_umi_matrix_per_experiment.output.csv,
+        # hdf = rules.summarize_umi_matrix_per_experiment.output.hdf,
         csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
                      expid=list(set(sample_list))),
         hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
                      expid=list(set(sample_list))),
         # Expression Matrix per item/pair-of-reads/lane
+        # csv_item = rules.summarize_umi_matrix_per_item.output.csv_item,
+        # hdf_item = rules.summarize_umi_matrix_per_item.output.hdf_item,
         csv_item = expand(join_path(DIR_PROJ, SUBDIR_EXPR,
                                     '{expid}', '{itemid}', 'expr.csv'), zip,
                           expid=sample_list, itemid=item_names),
@@ -133,18 +141,22 @@ rule all:
         alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
                                      '{itemid}', 'alignment_diagnose.csv'),
                            itemid=item_names),
-        # Annotation
-        anno = join_path(DIR_PROJ, SUBDIR_ANNO,
-                         base_name(GFF) + '.pickle'),
 
     output:
         touch('_done_UMI')
     run:
-        try:
+        if glob.glob('celseq2_job*.sh*'):
             shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
-        except:
-            pass
+
         print_logger('Expression UMI matrix is saved at {}'.format(input.csv))
+
+        if ALIGNER == 'star':
+            shell('rm {}'.format(rules.star_load_genome.output.flag))
+            print('Free memory loaded by STAR', flush=True)
+            cmd  = 'STAR '
+            cmd += '--genomeLoad Remove '
+            cmd += '--genomeDir {STAR_INDEX_DIR} '
+            shell(cmd)
 
 
 rule setup_dir:
@@ -169,10 +181,30 @@ rule setup_dir:
         for d in output.dir3:
             mkfolder(d)
 
+## HT-seq Count UMI ##
+rule cook_annotation:
+    input:
+        flag = '_done_setupdir',
+        gff = GFF,
+    output:
+        anno = join_path(DIR_PROJ, SUBDIR_ANNO,
+                         base_name(GFF) + '.pickle'),
+        flag = '_done_annotation',
+    message: 'Cooking Annotation'
+    run:
+        _ = cook_anno_model(input.gff, feature_atrr=FEATURE_ID,
+                            feature_type=FEATURE_CONTENT,
+                            stranded=True,
+                            dumpto=output.anno,
+                            verbose=verbose)
+        shell('touch {output.flag}')
+
 
 # Combo-demultiplexing
 rule combo_demultiplexing:
-    input: '_done_setupdir'
+    input:
+        flag1 = '_done_setupdir',
+        flag2 = '_done_annotation',
     output:
         dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq')),
     message: 'Performing combo-demultiplexing'
@@ -239,8 +271,25 @@ if ALIGNER == 'bowtie2':
 elif ALIGNER == 'star':
     assert STAR
     assert STAR_INDEX_DIR
+
+    rule star_load_genome:
+        # input:
+        #     flag = '_done_annotation',
+        output:
+            flag = '_done_star_genome_loaded',
+        message: 'Loading genome to memory for STAR'
+        run:
+            cmd = 'STAR '
+            cmd += '--genomeLoad LoadAndExit '
+            cmd += '--genomeDir {STAR_INDEX_DIR} '
+            shell(cmd)
+            shell('touch {output.flag} ')
+            # shell('echo loaded >> {output.flag} ')
+
+
     rule align_star:
         input:
+            flag = '_done_star_genome_loaded',
             fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
         output:
             sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
@@ -253,6 +302,7 @@ elif ALIGNER == 'star':
                 DIR_PROJ, SUBDIR_ALIGN, wildcards.itemid, wildcards.bc, '')
             cmd = 'STAR '
             cmd += ' --runRNGseed 42 '
+            cmd += ' --genomeLoad LoadAndKeep '
             cmd += ' --runThreadN {params.threads} '
             cmd += ' --genomeDir {STAR_INDEX_DIR} '
             # cmd += ' --readFilesCommand zcat '
@@ -265,21 +315,6 @@ elif ALIGNER == 'star':
 
 else:
     print('Error: Unknown aligner', flush=True)
-
-## HT-seq Count UMI ##
-rule cook_annotation:
-    input: GFF,
-    output:
-        anno = join_path(DIR_PROJ, SUBDIR_ANNO,
-                         base_name(GFF) + '.pickle'),
-        flag = touch('_done_annotation'),
-    message: 'Cooking Annotation'
-    run:
-        _ = cook_anno_model(GFF, feature_atrr=FEATURE_ID,
-                            feature_type=FEATURE_CONTENT,
-                            stranded=True,
-                            dumpto=output.anno,
-                            verbose=verbose)
 
 
 rule count_umi:
@@ -321,6 +356,7 @@ rule summarize_umi_matrix_per_item:
         hdf_item = expand(join_path(DIR_PROJ, SUBDIR_EXPR,
                                     '{expid}', '{itemid}', 'expr.h5'), zip,
                           expid=sample_list, itemid=item_names),
+        flag = join_path(DIR_PROJ, '_done_umimatrix_per_item'),
     run:
         _, all_genes = pickle.load(open(input.gff, 'rb'))
         all_genes = sorted(all_genes)
@@ -346,7 +382,7 @@ rule summarize_umi_matrix_per_item:
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, item_id, 'expr.h5'), 'table')
 
-        shell('touch _done_umimatrix_per_item')
+        shell('touch {output.flag} ')
 
 
 # - merge umi-count using *_umiset.pkl -> correct umi count per experiment/plate
