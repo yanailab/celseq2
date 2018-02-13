@@ -60,9 +60,9 @@ new-configuration-file -o /path/to/wonderful_CEL-Seq2_config.yaml
 
 Example of configuration is [here](https://github.com/yanailab/celseq2/blob/master/example/config.yaml).
 
-Example of CEL-Seq2 cell barcodes sequence dictionary is [here](https://gitlab.com/yanailab/celseq2/blob/master/example/barcodes_cel-seq_umis96.tab).
+Example of CEL-Seq2 cell barcodes sequence dictionary is [here](https://github.com/yanailab/celseq2/blob/master/example/barcodes_cel-seq_umis96.tab).
 
-Read ["Setup Configuration"](https://puriney.github.io/celseq2/user_guide/setup_config/)
+Read ["Setup Configuration"](https://yanailab.github.io/celseq2/user_guide/setup_config/)
 for full instructions.
 
 ### Step-2: Define Experiment Table
@@ -85,7 +85,7 @@ The content of experiment table in this example could be:
 | wonderful_experiment1     | 1-9              | path/to/lane2-R1.fastq.gz   | path/to/lane2-R2.fastq.gz   |
 | wonderful_experiment2     | 10-18                 | path/to/lane2-R1.fastq.gz | path/to/lane2-R2.fastq.gz   |
 
-Read ["Experiment Table Specification"](https://puriney.github.io/celseq2/user_guide/experiment_table/)
+Read ["Experiment Table Specification"](https://yanailab.github.io/celseq2/user_guide/experiment_table/)
 for full instructions when more complexed experiment designs take place.
 
 ### Step-3: Run Pipeline of `celseq2`
@@ -99,7 +99,7 @@ celseq2 --config-file /path/to/wonderful_CEL-Seq2_config.yaml \
     -j 10
 ```
 
-Read ["Launch Pipeline"](https://puriney.github.io/celseq2/user_guide/launch_pipeline/)
+Read ["Launch Pipeline"](https://yanailab.github.io/celseq2/user_guide/launch_pipeline/)
 for full instructions to see how to submit jobs to cluster, or preview how many
 tasks are going to be scheduled.
 
