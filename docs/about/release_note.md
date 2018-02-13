@@ -10,13 +10,14 @@
 
 ---
 
-## :fa-flag-checkered: **v0.4.2**
+## :fa-flag-checkered: **v0.4.3**
 
 :fa-calendar: **2018-02-13**
 
 :fa-star: **Features**
 
-- Improve the logics of snakemake pipeline to avoid silent pre-inhibition.
+- Improve the design of snakemake pipeline to avoid silent pre-inhibition.
+- Better support STAR to avoid memory overuse.
 
 ---
 
