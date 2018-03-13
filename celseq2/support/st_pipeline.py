@@ -9,7 +9,8 @@ import argparse
 import pandas as pd
 
 
-def celseq2stpipeline(celseq2_hdf5, spatial_map, out):
+def celseq2stpipeline(celseq2_hdf5, spatial_map, out,
+                      exclude_empty_spots, exclude_nondetected_genes):
     fhout = open(out, 'w')
 
     dict_spatial_seq2xy = {}
@@ -23,8 +24,16 @@ def celseq2stpipeline(celseq2_hdf5, spatial_map, out):
     expr = pd.read_hdf(celseq2_hdf5, 'table')  # genes x cells
 
     # df.loc[(df.sum(axis=1) != 0), (df.sum(axis=0) != 0)]
-    expr_valid = expr.loc[(expr.sum(axis=1) != 0), (expr.sum(axis=0) != 0)]
-    genes = expr_valid.index.values
+    if (exclude_empty_spots) and (exclude_nondetected_genes):
+        expr_valid = expr.loc[(expr.sum(axis=1) != 0), (expr.sum(axis=0) != 0)]
+    elif (not exclude_empty_spots) and (exclude_nondetected_genes):
+        expr_valid = expr.loc[(expr.sum(axis=1) != 0), (expr.sum(axis=0) >= 0)]
+    elif (exclude_empty_spots) and (not exclude_nondetected_genes):
+        expr_valid = expr.loc[(expr.sum(axis=1) >= 0), (expr.sum(axis=0) != 0)]
+    else:
+        expr_valid = expr
+
+    genes = map(lambda x: x.replace(' ', '_'), expr_valid.index.values)
     colnames = expr_valid.columns.values
     fhout.write('{}\t{}\n'.format('', '\t'.join(genes)))  # header
 
@@ -53,9 +62,15 @@ def main():
     parser.add_argument('out', metavar='FILENAME', type=str,
                         help=('File path to save st_pipeline readable'
                               ' output in tsv.'))
+    parser.add_argument('--exclude-empty-spots', action='store_true',
+                        help=('Exclude spots without any signals.'))
+    parser.add_argument('--exclude-nondetected-genes', action='store_true',
+                        help='Exclude genes with no UMIs.')
+
     args = parser.parse_args()
 
-    celseq2stpipeline(args.celseq2, args.spatial_map, args.out)
+    celseq2stpipeline(args.celseq2, args.spatial_map, args.out,
+                      args.exclude_empty_spots, args.exclude_nondetected_genes)
 
 
 if __name__ == "__main__":
