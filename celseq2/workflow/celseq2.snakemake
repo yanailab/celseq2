@@ -12,6 +12,7 @@ import pickle
 from collections import Counter, defaultdict
 from multiprocessing import Pool, cpu_count
 
+import tempfile
 import shutil
 import os
 
@@ -125,11 +126,13 @@ rule Count_Matrix:
         if ALIGNER == 'star':
             shell('rm {}'.format('_done_star_genome_loaded'))
             print('Free memory loaded by STAR', flush=True)
-            cmd  = 'STAR '
-            cmd += '--genomeLoad Remove '
-            cmd += '--genomeDir {STAR_INDEX_DIR} '
-            shell(cmd)
-
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                cmd = 'STAR '
+                cmd += '--genomeLoad Remove '
+                cmd += '--genomeDir {STAR_INDEX_DIR} '
+                cmd += '--outFileNamePrefix '
+                cmd += join_path(tmpdirname, '')
+                shell(cmd)
         print_logger('UMI-count matrix is saved at {}'.format(input.csv))
 
 
@@ -299,16 +302,16 @@ if ALIGNER == 'star':
         input:
             flag = '_done_annotation',
         output:
-            touch('_done_star_genome_loaded')
+            flag = '_done_star_genome_loaded',
         message: 'Loading genome to memory for STAR'
         shadow: "shallow"
         run:
             cmd = 'STAR '
             cmd += '--genomeLoad LoadAndExit '
             cmd += '--genomeDir {STAR_INDEX_DIR} '
+            cmd += '&& echo loaded >>  {output.flag} '
             shell(cmd)
-            # shell('touch {output.flag} ')
-            # shell('echo loaded >> {output.flag} ')
+
 
 if ALIGNER == 'star':
     assert STAR
