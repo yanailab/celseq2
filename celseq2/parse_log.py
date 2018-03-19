@@ -2,9 +2,54 @@ from collections import OrderedDict
 import re
 
 
+def parse_bowtie2_report(raw_data):
+    """
+    Parse log file of Bowtie2 (singl-end reads ONLY)
+
+    Adapted from MultiQC (https://github.com/ewels/MultiQC/blob/b885947a2112be94774a98bc6469026f23f1e36e/multiqc/modules/bowtie2/bowtie2.py)
+
+    Example:
+    18 reads; of these:
+      18 (100.00%) were unpaired; of these:
+        0 (0.00%) aligned 0 times
+        14 (77.78%) aligned exactly 1 time
+        4 (22.22%) aligned >1 times
+    100.00% overall alignment rate
+    """
+
+    # Regexes
+    regexes = {
+        'unpaired': {
+            'total_reads': r"(\d+) reads; of these:",
+            'total_unpaired': r"(\d+) \([\d\.]+%\) were unpaired; of these:",
+            'unmapped': r"(\d+) \([\d\.]+%\) aligned 0 times",
+            'uniquely_mapped': r"(\d+) \([\d\.]+%\) aligned exactly 1 time",
+            'multi_mapped': r"(\d+) \([\d\.]+%\) aligned >1 times",
+            'overall_alignment_percent': r"([\d\.]+)% overall alignment rate",
+        },
+        'paired': {
+            'paired_aligned_none': r"(\d+) \([\d\.]+%\) aligned concordantly 0 times",
+            'paired_aligned_one': r"(\d+) \([\d\.]+%\) aligned concordantly exactly 1 time",
+            'paired_aligned_multi': r"(\d+) \([\d\.]+%\) aligned concordantly >1 times",
+            'paired_aligned_discord_one': r"(\d+) \([\d\.]+%\) aligned discordantly 1 time",
+            'paired_aligned_discord_multi': r"(\d+) \([\d\.]+%\) aligned discordantly >1 times",
+            'paired_aligned_mate_one': r"(\d+) \([\d\.]+%\) aligned exactly 1 time",
+            'paired_aligned_mate_multi': r"(\d+) \([\d\.]+%\) aligned >1 times",
+            'paired_aligned_mate_none': r"(\d+) \([\d\.]+%\) aligned 0 times"
+        }
+    }
+    parsed_data = OrderedDict()
+    for k, r in regexes['unpaired'].items():
+        r_search = re.search(r, raw_data, re.MULTILINE)
+        if r_search:
+            parsed_data[k] = float(r_search.group(1))
+    assert parsed_data['total_reads'] == parsed_data['total_reads'] # single-end
+    return(parsed_data)
+
+
 def parse_star_report(raw_data):
     """
-    Parse the final STAR log file.
+    Parse the STAR log file.
     Copied from MultiQC (https://github.com/ewels/MultiQC/blob/b885947a2112be94774a98bc6469026f23f1e36e/multiqc/modules/star/star.py)
     """
 
@@ -65,7 +110,9 @@ def parse_star_report(raw_data):
     return parsed_data
 
 
-def merge_reports(reports, report_names=None, savetocsv='report.csv'):
+def merge_reports(reports, report_names=None,
+                  aligner_name = None,
+                  savetocsv='report.csv'):
     """ Merge a list of reports and save as a CSV file """
     if not reports:
         return
@@ -73,9 +120,13 @@ def merge_reports(reports, report_names=None, savetocsv='report.csv'):
     if not report_names:
         report_names = [str(i + 1) for i in range(n)]
     assert len(reports) == len(report_names)
+
+    if (not aligner_name) or (aligner_name not in ('bowtie2', 'star')):
+        aligner_name = 'X'
+
     features = list(reports[0].keys())
     with open(savetocsv, 'w') as fout:
-        fout.write('{}\n'.format(','.join(['Item'] + features)))
+        fout.write('{}\n'.format(','.join([aligner_name] + features)))
         for i in range(n):
             i_name = report_names[i]
             i_values = list(reports[i].values())
