@@ -133,3 +133,6 @@ def merge_reports(reports, report_names=None,
             fout.write('{}\n'.format(
                 ','.join(map(str, [i_name] + i_values))))
     return savetocsv
+
+if __name__ == '__main__':
+    print('This is parse_log.py')

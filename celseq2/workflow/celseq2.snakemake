@@ -5,6 +5,7 @@ from celseq2.helper import rmfolder, mkfolder
 from celseq2.helper import cook_sample_sheet, popen_communicate
 from celseq2.prepare_annotation_model import cook_anno_model
 from celseq2.count_umi import count_umi, _flatten_umi_set
+from celseq2.parse_log import parse_bowtie2_report, parse_star_report, merge_reports
 import pandas as pd
 import glob
 import pickle
@@ -12,6 +13,7 @@ import pickle
 from collections import Counter, defaultdict
 from multiprocessing import Pool, cpu_count
 
+import re
 import tempfile
 import shutil
 import os
@@ -92,9 +94,12 @@ SUBDIR_LOG = 'small_log'
 SUBDIR_QSUB = 'qsub_log'
 SUBDIR_DIAG = 'small_diagnose'
 SUBDIR_ANNO = 'annotation'
+SUBDIR_REPORT = 'report'
+
 SUBDIRS = [SUBDIR_INPUT,
            SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_UMI_CNT, SUBDIR_UMI_SET,
            SUBDIR_EXPR,
+           SUBDIR_REPORT,
            SUBDIR_LOG, SUBDIR_QSUB, SUBDIR_DIAG, SUBDIR_ANNO
            ]
 
@@ -116,9 +121,9 @@ rule Count_Matrix:
                      expid=list(set(sample_list))),
         hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
                      expid=list(set(sample_list))),
-        # alignment = expand(join_path(DIR_PROJ, SUBDIR_DIAG,
-        #                              '{itemid}', 'alignment_diagnose.csv'),
-        #                    itemid=item_names),
+        report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
+                        'alignment_'+ALIGNER+'.csv'), itemid=item_names),
+
     output:
         touch('_done_UMI')
     message: 'Finished counting UMI-count matrix.'
@@ -296,6 +301,54 @@ if ALIGNER == 'bowtie2':
                 --seed 42
                 """)
 
+    rule parse_bowtie2_log:
+        input:
+            log = join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
+                            'Align-Bowtie2_Cell-{bc}.log'),
+        output:
+            report = join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
+                               'Align-Bowtie2_Cell-{bc}.pickle'),
+        run:
+            with open(input.log, 'r') as fin:
+                log_content = fin.readlines()
+            df = parse_bowtie2_report('\t'.join(log_content))
+            pickle.dump(df, open(output.report, 'wb'))
+
+    rule report_bowtie2_log:
+        input:
+            # flag = '_done_umimatrix_per_experiment',
+            df = dynamic(join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
+                                   'Align-Bowtie2_Cell-{bc}.pickle')),
+        output:
+            report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
+                            'alignment_'+ALIGNER+'.csv'), itemid=item_names),
+        run:
+            for item in item_names:
+                logs_per_item = []
+                logs_name_item = []
+                report_item = join_path(DIR_PROJ, SUBDIR_REPORT, item,
+                                        'alignment_'+ALIGNER+'.csv')
+
+                logs_fpath_item = [x for x in input.df if item in x]
+                for log_fpath in logs_fpath_item:
+                    log_df = pickle.load(open(log_fpath, 'rb'))
+                    logs_per_item.append(log_df)
+
+                    log_name = base_name(log_fpath)
+                    # Align-Bowtie2_Cell-BC-29-ACCATG
+                    log_name_re = re.search(
+                                    r"Align-Bowtie2_Cell-BC-((\d+)-(\w+))",
+                                    log_name)
+                    if log_name_re:
+                        log_name = log_name_re.group(1)
+                    logs_name_item.append(log_name)
+
+                _ = merge_reports(reports=logs_per_item,
+                                  report_names=logs_name_item,
+                                  aligner_name=ALIGNER,
+                                  savetocsv=report_item)
+
+
 if ALIGNER == 'star':
     assert STAR_INDEX_DIR
     rule star_load_genome:
@@ -324,10 +377,10 @@ if ALIGNER == 'star':
             starsam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}',
                                 'Aligned.out.sam'),
         params:
-            threads = num_threads
+            star_prefix = join_path(DIR_PROJ, SUBDIR_ALIGN,
+                                    '{itemid}', '{bc}', ''),
+            threads = num_threads,
         run:
-            star_prefix = join_path(
-                DIR_PROJ, SUBDIR_ALIGN, wildcards.itemid, wildcards.bc, '')
             cmd = 'STAR '
             cmd += ' --runRNGseed 42 '
             cmd += ' --genomeLoad LoadAndKeep '
@@ -335,7 +388,7 @@ if ALIGNER == 'star':
             cmd += ' --genomeDir {STAR_INDEX_DIR} '
             # cmd += ' --readFilesCommand zcat '
             cmd += ' --readFilesIn {input.fq} '
-            cmd += ' --outFileNamePrefix {star_prefix} '
+            cmd += ' --outFileNamePrefix {params.star_prefix} '
             # cmd += ' --outSAMmultNmax 1 '
             shell(cmd)
             shell('ln -s {output.starsam} {output.sam} ')
@@ -423,6 +476,7 @@ rule summarize_umi_matrix_per_experiment:
                      expid=list(set(sample_list))),
         hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
                      expid=list(set(sample_list))),
+        flag = '_done_umimatrix_per_experiment',
     run:
         _, all_genes = pickle.load(open(input.gff, 'rb'))
         all_genes = sorted(all_genes)
@@ -461,7 +515,7 @@ rule summarize_umi_matrix_per_experiment:
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, 'expr.h5'), 'table')
 
-        shell('touch _done_umimatrix_per_experiment')
+        shell('touch {output.flag} ')
 
 
 rule summarize_alignment_diagnose:
