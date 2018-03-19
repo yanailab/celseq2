@@ -121,12 +121,12 @@ def merge_reports(reports, report_names=None,
         report_names = [str(i + 1) for i in range(n)]
     assert len(reports) == len(report_names)
 
-    if (not aligner_name) or (aligner_name not in ('bowtie2', 'star')):
+    if (not aligner_name) or (str(aligner_name) not in ('bowtie2', 'star')):
         aligner_name = 'X'
 
     features = list(reports[0].keys())
     with open(savetocsv, 'w') as fout:
-        fout.write('{}\n'.format(','.join([aligner_name] + features)))
+        fout.write('{}\n'.format(','.join([str(aligner_name)] + features)))
         for i in range(n):
             i_name = report_names[i]
             i_values = list(reports[i].values())
