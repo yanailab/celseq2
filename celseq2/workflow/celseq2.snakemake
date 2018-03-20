@@ -115,7 +115,7 @@ aln_diagnose_item = ["_unmapped",
 
 workdir: DIR_PROJ
 
-rule Count_Matrix:
+rule all:
     input:
         csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
                      expid=list(set(sample_list))),
@@ -123,6 +123,13 @@ rule Count_Matrix:
                      expid=list(set(sample_list))),
         report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
                         'alignment_'+ALIGNER+'.csv'), itemid=item_names),
+
+rule COUNT_MATRIX:
+    input:
+        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+                     expid=list(set(sample_list))),
+        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+                     expid=list(set(sample_list))),
 
     output:
         touch('_done_UMI')
@@ -306,47 +313,13 @@ if ALIGNER == 'bowtie2':
             log = join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
                             'Align-Bowtie2_Cell-{bc}.log'),
         output:
-            report = join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
-                               'Align-Bowtie2_Cell-{bc}.pickle'),
+            report = join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}', ALIGNER,
+                               '{bc}.pickle'),
         run:
             with open(input.log, 'r') as fin:
                 log_content = fin.readlines()
             df = parse_bowtie2_report('\t'.join(log_content))
             pickle.dump(df, open(output.report, 'wb'))
-
-    rule report_bowtie2_log:
-        input:
-            # flag = '_done_umimatrix_per_experiment',
-            df = dynamic(join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
-                                   'Align-Bowtie2_Cell-{bc}.pickle')),
-        output:
-            report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
-                            'alignment_'+ALIGNER+'.csv'), itemid=item_names),
-        run:
-            for item in item_names:
-                logs_per_item = []
-                logs_name_item = []
-                report_item = join_path(DIR_PROJ, SUBDIR_REPORT, item,
-                                        'alignment_'+ALIGNER+'.csv')
-
-                logs_fpath_item = [x for x in input.df if item in x]
-                for log_fpath in logs_fpath_item:
-                    log_df = pickle.load(open(log_fpath, 'rb'))
-                    logs_per_item.append(log_df)
-
-                    log_name = base_name(log_fpath)
-                    # Align-Bowtie2_Cell-BC-29-ACCATG
-                    log_name_re = re.search(
-                                    r"Align-Bowtie2_Cell-BC-((\d+)-(\w+))",
-                                    log_name)
-                    if log_name_re:
-                        log_name = log_name_re.group(1)
-                    logs_name_item.append(log_name)
-
-                _ = merge_reports(reports=logs_per_item,
-                                  report_names=logs_name_item,
-                                  aligner_name=ALIGNER,
-                                  savetocsv=report_item)
 
 
 if ALIGNER == 'star':
@@ -376,6 +349,8 @@ if ALIGNER == 'star':
             sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
             starsam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}',
                                 'Aligned.out.sam'),
+            starlog = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}',
+                                'Log.final.out'),
         params:
             star_prefix = join_path(DIR_PROJ, SUBDIR_ALIGN,
                                     '{itemid}', '{bc}', ''),
@@ -393,6 +368,54 @@ if ALIGNER == 'star':
             shell(cmd)
             shell('ln -s {output.starsam} {output.sam} ')
             shell('touch -h {output.sam} ')
+
+    rule parse_star_log:
+        input:
+            starlog = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}',
+                                'Log.final.out'),
+        output:
+            report = join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}', ALIGNER,
+                               '{bc}.pickle'),
+        run:
+            with open(input.starlog, 'r') as fin:
+                log_content = fin.readlines()
+            df = parse_star_report('\t'.join(log_content))
+            pickle.dump(df, open(output.report, 'wb'))
+
+
+rule REPORT_ALIGNMENT_LOG:
+    input:
+        report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
+                                  'alignment_'+ALIGNER+'.csv'),
+                        itemid=item_names),
+
+rule report_alignment_log:
+    input:
+        '_done_umimatrix_per_experiment',
+        df = dynamic(join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}', ALIGNER,
+                               '{bc}.pickle')),
+    output:
+        report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
+                        'alignment_'+ALIGNER+'.csv'), itemid=item_names),
+    run:
+        for item in item_names:
+            logs_per_item = []
+            logs_name_item = []
+            report_item = join_path(DIR_PROJ, SUBDIR_REPORT, item,
+                                    'alignment_'+ALIGNER+'.csv')
+
+            logs_fpath_item = [x for x in input.df if item in x]
+            for log_fpath in logs_fpath_item:
+                log_df = pickle.load(open(log_fpath, 'rb'))
+                logs_per_item.append(log_df)
+
+                log_name = base_name(log_fpath)
+                logs_name_item.append(log_name)
+
+            _ = merge_reports(reports=logs_per_item,
+                              report_names=logs_name_item,
+                              aligner_name=ALIGNER,
+                              savetocsv=report_item)
 
 
 rule count_umi:

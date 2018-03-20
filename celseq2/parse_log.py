@@ -38,12 +38,12 @@ def parse_bowtie2_report(raw_data):
             'paired_aligned_mate_none': r"(\d+) \([\d\.]+%\) aligned 0 times"
         }
     }
-    parsed_data = OrderedDict()
+    parsed_data = OrderedDict({k: 0 for k in regexes['unpaired'].keys()})
     for k, r in regexes['unpaired'].items():
         r_search = re.search(r, raw_data, re.MULTILINE)
         if r_search:
             parsed_data[k] = float(r_search.group(1))
-    assert parsed_data['total_reads'] == parsed_data['total_reads'] # single-end
+    assert parsed_data['total_reads'] == parsed_data['total_unpaired'] # single-end
     return(parsed_data)
 
 
@@ -78,7 +78,7 @@ def parse_star_report(raw_data):
         'unmapped_tooshort_percent': r"% of reads unmapped: too short \|\s+([\d\.]+)",
         'unmapped_other_percent': r"% of reads unmapped: other \|\s+([\d\.]+)",
     }
-    parsed_data = OrderedDict()
+    parsed_data = OrderedDict({k: 0 for k in regexes.keys()})
     for k, r in regexes.items():
         r_search = re.search(r, raw_data, re.MULTILINE)
         if r_search:
