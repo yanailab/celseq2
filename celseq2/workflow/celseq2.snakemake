@@ -244,7 +244,7 @@ rule COOK_ANNOTATION:
 # Combo-demultiplexing
 rule COMBO_DEMULTIPLEXING:
     input:
-        flag2 = '_done_annotation',
+        # flag2 = '_done_annotation',
         flag1 = '_done_setupdir',
     output:
         '_done_combodemultiplex', # dynamic() is not allowed if task being called on terminal
@@ -288,7 +288,7 @@ rule COMBO_DEMULTIPLEXING:
 
 rule combo_demultiplexing:
     input:
-        flag2 = '_done_annotation',
+        # flag2 = '_done_annotation',
         flag1 = '_done_setupdir',
     output:
         fq = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq')),

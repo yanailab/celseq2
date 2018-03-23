@@ -5,6 +5,7 @@ import argparse
 import pickle
 
 from celseq2.helper import print_logger
+from genometools.ensembl.annotations import get_genes
 
 
 def cook_anno_model(gff_fpath, feature_atrr='gene_id', feature_type='exon',
@@ -45,13 +46,17 @@ def cook_anno_model(gff_fpath, feature_atrr='gene_id', feature_type='exon',
             exported_genes.add(gff.attr[feature_atrr].strip())
             continue
 
-        if gff.attr.get('gene_biotype', None) in gene_types:
-            exported_genes.add(gff.attr[feature_atrr].strip())
+        # if gff.attr.get('gene_biotype', None) in gene_types:
+        #     exported_genes.add(gff.attr[feature_atrr].strip())
 
     print_logger('Processed {:,} lines of GFF...'.format(i))
 
+    # Use genometools to select exported_genes
+    if gene_types:
+        exported_genes = get_genes(gff_fpath, valid_biotypes=set(gene_types))
+        exported_genes = list(exported_genes['name'].values)
     if exported_genes:
-        exported_genes = sorted(exported_genes)
+        exported_genes = tuple(sorted(exported_genes))
     if dumpto:
         with open(dumpto, 'wb') as fh:
             pickle.dump((features, exported_genes), fh)

@@ -21,6 +21,7 @@ install_requires = [
     'pandas>=0.20.0',
     'numpy>=1.12.0',
     'tables>=3.4.2',
+    'genometools',
 ]
 
 # do not require installation if built by ReadTheDocs
