@@ -47,6 +47,8 @@ STAR = config.get('STAR', None)
 GFF = config.get('GFF', None)
 FEATURE_ID = config.get('FEATURE_ID', 'gene_name')
 FEATURE_CONTENT = config.get('FEATURE_CONTENT', 'exon')
+GENE_BIOTYPE = config.get('GENE_BIOTYPE', None)
+if not GENE_BIOTYPE: GENE_BIOTYPE = ();
 
 ## Demultiplexing ##
 FASTQ_QUAL_MIN_OF_BC = config.get('FASTQ_QUAL_MIN_OF_BC', None)  # 10
@@ -222,7 +224,7 @@ rule setup_dir:
             mkfolder(d)
 
 ## HT-seq Count UMI ##
-rule cook_annotation:
+rule COOK_ANNOTATION:
     input:
         '_done_setupdir',
     output:
@@ -233,12 +235,57 @@ rule cook_annotation:
     run:
         _ = cook_anno_model(GFF, feature_atrr=FEATURE_ID,
                             feature_type=FEATURE_CONTENT,
+                            gene_types=GENE_BIOTYPE,
                             stranded=True,
                             dumpto=output.anno,
                             verbose=verbose)
         shell('touch {output.flag}')
 
 # Combo-demultiplexing
+rule COMBO_DEMULTIPLEXING:
+    input:
+        flag2 = '_done_annotation',
+        flag1 = '_done_setupdir',
+    output:
+        '_done_combodemultiplex', # dynamic() is not allowed if task being called on terminal
+    message: 'Performing combo-demultiplexing'
+    threads: len(item_names)
+    run:
+        # Demultiplx fastq in Process pool
+        p = Pool(threads)
+        for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
+            itemid_in = join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
+            try:
+                os.symlink(itemr1, join_path(itemid_in, 'R1.fastq.gz'))
+                os.symlink(itemr2, join_path(itemid_in, 'R2.fastq.gz'))
+            except OSError:
+                pass
+            itemid_fqs_dir = join_path(DIR_PROJ, SUBDIR_FASTQ, itemid)
+            itemid_log = join_path(DIR_PROJ, SUBDIR_DIAG, itemid,
+                                   'demultiplexing.log')
+            print_logger('Demultiplexing {}'.format(itemid))
+            cmd = " ".join(["bc_demultiplex",
+                            itemr1,
+                            itemr2,
+                            "--bc-index {}".format(BC_INDEX_FPATH),
+                            "--bc-seq-column {}".format(BC_SEQ_COLUMN),
+                            "--bc-index-used {}".format(itembc),
+                            "--min-bc-quality {}".format(FASTQ_QUAL_MIN_OF_BC),
+                            "--umi-start-position {}".format(
+                                UMI_START_POSITION),
+                            "--bc-start-position {}".format(BC_START_POSITION),
+                            "--umi-length {}".format(UMI_LENGTH),
+                            "--bc-length {}".format(BC_LENGTH),
+                            "--cut-length {}".format(CUT_LENGTH),
+                            "--out-dir  {}".format(itemid_fqs_dir),
+                            "--is-gzip ",
+                            "--stats-file {}".format(itemid_log)])
+            p.apply_async(shell, args=(cmd,))
+        p.close()
+        p.join()
+        shell('touch {output} ')
+
+
 rule combo_demultiplexing:
     input:
         flag2 = '_done_annotation',

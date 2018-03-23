@@ -21,6 +21,8 @@ GFF: '/absolute/path/to/wonderful.gtf.gz'
 # Refer: http://htseq.readthedocs.io/en/master/count.html
 FEATURE_ID: 'gene_name'
 FEATURE_CONTENT: 'exon'
+# GENE_BIOTYPE: ['protein_coding', 'lincRNA']
+GENE_BIOTYPE:
 
 ## Demultiplexing ##
 FASTQ_QUAL_MIN_OF_BC: 10
