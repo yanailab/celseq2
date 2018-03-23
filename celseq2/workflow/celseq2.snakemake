@@ -439,8 +439,7 @@ rule count_umi:
         aln_diag = join_path(DIR_PROJ, SUBDIR_DIAG, '{itemid}', '{bc}.pkl'),
     message: 'Counting {input.sam}'
     run:
-        features_f, all_genes = pickle.load(open(input.gff, 'rb'))
-        all_genes = sorted(all_genes)
+        features_f, _ = pickle.load(open(input.gff, 'rb'))
         umi_cnt, umi_set, aln_cnt = count_umi(sam_fpath=input.sam,
                                               features=features_f,
                                               len_umi=UMI_LENGTH,
@@ -469,8 +468,7 @@ rule summarize_umi_matrix_per_item:
                           expid=sample_list, itemid=item_names),
         flag = '_done_umimatrix_per_item',
     run:
-        _, all_genes = pickle.load(open(input.gff, 'rb'))
-        all_genes = sorted(all_genes)
+        _, export_genes = pickle.load(open(input.gff, 'rb'))
 
         # item -> dict(cell_bc -> Counter(umi_vector))
         item_expr_matrix = defaultdict(dict)
@@ -484,10 +482,10 @@ rule summarize_umi_matrix_per_item:
             exp_id = SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']  # E1
 
             for bc, cnt in expr_dict.items():
-                expr_dict[bc] = pd.Series([cnt[x] for x in all_genes],
-                                          index=all_genes)
+                expr_dict[bc] = pd.Series([cnt[x] for x in export_genes],
+                                          index=export_genes)
 
-            expr_df = pd.DataFrame(expr_dict, index=all_genes).fillna(0)
+            expr_df = pd.DataFrame(expr_dict, index=export_genes).fillna(0)
             expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, item_id, 'expr.csv'))
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
@@ -511,8 +509,7 @@ rule summarize_umi_matrix_per_experiment:
                      expid=list(set(sample_list))),
         flag = '_done_umimatrix_per_experiment',
     run:
-        _, all_genes = pickle.load(open(input.gff, 'rb'))
-        all_genes = sorted(all_genes)
+        _, export_genes = pickle.load(open(input.gff, 'rb'))
 
         sample_list = SAMPLE_TABLE['SAMPLE_NAME'].values
 
@@ -532,7 +529,7 @@ rule summarize_umi_matrix_per_experiment:
                 exp_expr_matrix[exp_id][bc_name] = umiset_stream
                 continue
             umiset_cached = exp_expr_matrix[exp_id][bc_name]
-            for x in all_genes:
+            for x in export_genes:
                 y1 = exp_expr_matrix[exp_id][bc_name].get(x, set())
                 y2 = umiset_stream.get(x, set())
                 exp_expr_matrix[exp_id][bc_name][x] = y1 | y2
@@ -540,9 +537,9 @@ rule summarize_umi_matrix_per_experiment:
         for exp_id, expr_dict in exp_expr_matrix.items():
             for bc, cnt in expr_dict.items():
                 cnt = _flatten_umi_set(cnt)
-                expr_dict[bc] = pd.Series([cnt[x] for x in all_genes],
-                                          index=all_genes)
-            expr_df = pd.DataFrame(expr_dict, index=all_genes).fillna(0)
+                expr_dict[bc] = pd.Series([cnt[x] for x in export_genes],
+                                          index=export_genes)
+            expr_df = pd.DataFrame(expr_dict, index=export_genes).fillna(0)
             expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, 'expr.csv'))
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
