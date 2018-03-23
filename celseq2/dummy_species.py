@@ -11,7 +11,7 @@ import random
 import argparse
 
 
-def gtf_attr_str(gene_id=None, gene_name=None,
+def gtf_attr_str(gene_id=None, gene_name=None, gene_biotype=None,
                  transcript_id=None, exon_num=None):
     '''
     Simple writer to fill 'attribute' column of GTF
@@ -26,6 +26,8 @@ def gtf_attr_str(gene_id=None, gene_name=None,
         return(None)
     out = "gene_id \"{gid}\"; gene_name \"{gname}\";".format(gid=gene_id,
                                                              gname=gene_name)
+    if gene_biotype:
+        out += " gene_biotype \"{biotype}\";".format(biotype=gene_biotype)
     if transcript_id:
         out += " transcript_id \"{txid}\";".format(txid=transcript_id)
     if exon_num:
@@ -62,7 +64,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     frame = '.'
     out = []
     # g0
-    g_attr = gtf_attr_str(gene_id='g0', gene_name='celseq2_gene-0')
+    g_attr = gtf_attr_str(gene_id='g0', gene_name='celseq2_gene-0', gene_biotype='protein_coding')
     g = gtf_str(chrm='chr1', src=src,
                 feature='gene',
                 start=s_stream,
@@ -73,7 +75,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
                 attr=g_attr)
     fout.write('{}\n'.format(g))
     out.append(g)
-    tx_attr = gtf_attr_str(gene_id='g0', gene_name='celseq_gene-0',
+    tx_attr = gtf_attr_str(gene_id='g0', gene_name='celseq_gene-0', gene_biotype='protein_coding',
                            transcript_id='tx0')
     tx = gtf_str(chrm='chr1', src=src,
                  feature='transcript',
@@ -86,7 +88,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     fout.write('{}\n'.format(tx))
     out.append(tx)
     for i in range(2):
-        exon_attr = gtf_attr_str(gene_id='g0', gene_name='celseq_gene-0',
+        exon_attr = gtf_attr_str(gene_id='g0', gene_name='celseq_gene-0', gene_biotype='protein_coding',
                                  transcript_id='tx0', exon_num=i + 1)
         s_stream, e_stream = s_stream, s_stream + len_exon - 1
         exon = gtf_str(chrm='chr1', src=src,
@@ -103,7 +105,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
 
     s_stream, e_stream = e_stream - 2 * len_exon - 1 * len_intron + 1, e_stream
     # g8
-    g_attr = gtf_attr_str(gene_id='g8', gene_name='celseq2_gene-8')
+    g_attr = gtf_attr_str(gene_id='g8', gene_name='celseq2_gene-8', gene_biotype='lincRNA')
     g = gtf_str(chrm='chr2', src=src,
                 feature='gene',
                 start=s_stream,
@@ -115,7 +117,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     fout.write('{}\n'.format(g))
     out.append(g)
     tx_attr = gtf_attr_str(gene_id='g8', gene_name='celseq_gene-8',
-                           transcript_id='tx8')
+                           transcript_id='tx8', gene_biotype='lincRNA')
     tx = gtf_str(chrm='chr2', src=src,
                  feature='transcript',
                  start=s_stream,
@@ -127,7 +129,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     fout.write('{}\n'.format(tx))
     out.append(tx)
     for i in range(2):
-        exon_attr = gtf_attr_str(gene_id='g8', gene_name='celseq_gene-8',
+        exon_attr = gtf_attr_str(gene_id='g8', gene_name='celseq_gene-8', gene_biotype='lincRNA',
                                  transcript_id='tx8', exon_num=i + 1)
         s_stream, e_stream = s_stream, s_stream + len_exon - 1
         exon = gtf_str(chrm='chr2', src=src,
@@ -144,7 +146,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
 
     s_stream = e_stream + 1 + len_intergenic
     # g1
-    g_attr = gtf_attr_str(gene_id='g1', gene_name='celseq2_gene-1')
+    g_attr = gtf_attr_str(gene_id='g1', gene_name='celseq2_gene-1', gene_biotype='miRNA')
     g = gtf_str(chrm='chr1', src=src,
                 feature='gene',
                 start=s_stream,
@@ -155,7 +157,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
                 attr=g_attr)
     fout.write('{}\n'.format(g))
     out.append(g)
-    tx_attr = gtf_attr_str(gene_id='g1', gene_name='celseq_gene-1',
+    tx_attr = gtf_attr_str(gene_id='g1', gene_name='celseq_gene-1', gene_biotype='miRNA',
                            transcript_id='tx1')
     tx = gtf_str(chrm='chr1', src=src,
                  feature='transcript',
@@ -168,7 +170,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     fout.write('{}\n'.format(tx))
     out.append(tx)
     for i in range(3, 0, -1):
-        exon_attr = gtf_attr_str(gene_id='g1', gene_name='celseq_gene-1',
+        exon_attr = gtf_attr_str(gene_id='g1', gene_name='celseq_gene-1', gene_biotype='miRNA',
                                  transcript_id='tx1', exon_num=i)
         s_stream, e_stream = s_stream, s_stream + len_exon - 1
         exon = gtf_str(chrm='chr1', src=src,
@@ -185,7 +187,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
 
     s_stream = e_stream + 1 + len_intergenic
     # g2
-    g_attr = gtf_attr_str(gene_id='g2', gene_name='celseq2_gene-2')
+    g_attr = gtf_attr_str(gene_id='g2', gene_name='celseq2_gene-2', gene_biotype='protein_coding')
     g = gtf_str(chrm='chr1', src=src,
                 feature='gene',
                 start=s_stream,
@@ -196,7 +198,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
                 attr=g_attr)
     fout.write('{}\n'.format(g))
     out.append(g)
-    tx_attr = gtf_attr_str(gene_id='g2', gene_name='celseq_gene-2',
+    tx_attr = gtf_attr_str(gene_id='g2', gene_name='celseq_gene-2', gene_biotype='protein_coding',
                            transcript_id='tx2.1')
     tx = gtf_str(chrm='chr1', src=src,
                  feature='transcript',
@@ -209,7 +211,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     fout.write('{}\n'.format(tx))
     out.append(tx)
     for i in range(2, 0, -1):
-        exon_attr = gtf_attr_str(gene_id='g2', gene_name='celseq_gene-2',
+        exon_attr = gtf_attr_str(gene_id='g2', gene_name='celseq_gene-2', gene_biotype='protein_coding',
                                  transcript_id='tx2', exon_num=i)
         s_stream, e_stream = s_stream, s_stream + len_exon - 1
         exon = gtf_str(chrm='chr1', src=src,
@@ -224,7 +226,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
         out.append(exon)
         s_stream = e_stream + 1 + len_intron
 
-    tx_attr = gtf_attr_str(gene_id='g2', gene_name='celseq_gene-2',
+    tx_attr = gtf_attr_str(gene_id='g2', gene_name='celseq_gene-2', gene_biotype='protein_coding',
                            transcript_id='tx2.2')
     tx = gtf_str(chrm='chr1', src=src,
                  feature='transcript',
@@ -236,7 +238,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
                  attr=tx_attr)
     fout.write('{}\n'.format(tx))
     out.append(tx)
-    exon_attr = gtf_attr_str(gene_id='g2', gene_name='celseq_gene-2',
+    exon_attr = gtf_attr_str(gene_id='g2', gene_name='celseq_gene-2', gene_biotype='protein_coding',
                              transcript_id='tx2.2', exon_num=1)
     exon = gtf_str(chrm='chr1', src=src,
                    feature='exon',
@@ -251,7 +253,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
 
     s_stream = e_stream + 1 + len_intergenic
     # g3
-    g_attr = gtf_attr_str(gene_id='g3', gene_name='celseq2_gene-3')
+    g_attr = gtf_attr_str(gene_id='g3', gene_name='celseq2_gene-3', gene_biotype='protein_coding')
     g = gtf_str(chrm='chr1', src=src,
                 feature='gene',
                 start=s_stream,
@@ -262,7 +264,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
                 attr=g_attr)
     fout.write('{}\n'.format(g))
     out.append(g)
-    tx_attr = gtf_attr_str(gene_id='g3', gene_name='celseq_gene-3',
+    tx_attr = gtf_attr_str(gene_id='g3', gene_name='celseq_gene-3', gene_biotype='protein_coding',
                            transcript_id='tx3')
     tx = gtf_str(chrm='chr1', src=src,
                  feature='transcript',
@@ -275,7 +277,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     fout.write('{}\n'.format(tx))
     out.append(tx)
     for i in range(2):
-        exon_attr = gtf_attr_str(gene_id='g3', gene_name='celseq_gene-3',
+        exon_attr = gtf_attr_str(gene_id='g3', gene_name='celseq_gene-3', gene_biotype='protein_coding',
                                  transcript_id='tx3', exon_num=i + 1)
         s_stream, e_stream = s_stream, s_stream + len_exon - 1
         exon = gtf_str(chrm='chr1', src=src,
@@ -293,7 +295,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     s_stream = e_stream + 1 + len_intergenic
 
     # g4
-    g_attr = gtf_attr_str(gene_id='g4', gene_name='celseq2_gene-4')
+    g_attr = gtf_attr_str(gene_id='g4', gene_name='celseq2_gene-4', gene_biotype='protein_coding')
     g = gtf_str(chrm='chr1', src=src,
                 feature='gene',
                 start=s_stream,
@@ -304,7 +306,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
                 attr=g_attr)
     fout.write('{}\n'.format(g))
     out.append(g)
-    tx_attr = gtf_attr_str(gene_id='g4', gene_name='celseq_gene-4',
+    tx_attr = gtf_attr_str(gene_id='g4', gene_name='celseq_gene-4', gene_biotype='protein_coding',
                            transcript_id='tx4')
     tx = gtf_str(chrm='chr1', src=src,
                  feature='transcript',
@@ -317,7 +319,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     fout.write('{}\n'.format(tx))
     out.append(tx)
     for i in range(2):
-        exon_attr = gtf_attr_str(gene_id='g4', gene_name='celseq_gene-4',
+        exon_attr = gtf_attr_str(gene_id='g4', gene_name='celseq_gene-4', gene_biotype='protein_coding',
                                  transcript_id='tx4', exon_num=i + 1)
         s_stream, e_stream = s_stream, s_stream + len_exon - 1
         exon = gtf_str(chrm='chr1', src=src,
@@ -334,7 +336,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
 
     # g5
     s_stream, e_stream = e_stream - len_exon + 1, e_stream
-    g_attr = gtf_attr_str(gene_id='g5', gene_name='celseq2_gene-5')
+    g_attr = gtf_attr_str(gene_id='g5', gene_name='celseq2_gene-5', gene_biotype='protein_coding')
     g = gtf_str(chrm='chr1', src=src,
                 feature='gene',
                 start=s_stream,
@@ -345,7 +347,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
                 attr=g_attr)
     fout.write('{}\n'.format(g))
     out.append(g)
-    tx_attr = gtf_attr_str(gene_id='g5', gene_name='celseq_gene-5',
+    tx_attr = gtf_attr_str(gene_id='g5', gene_name='celseq_gene-5', gene_biotype='protein_coding',
                            transcript_id='tx5')
     tx = gtf_str(chrm='chr1', src=src,
                  feature='transcript',
@@ -358,7 +360,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     fout.write('{}\n'.format(tx))
     out.append(tx)
     for i in range(1, 0, -1):
-        exon_attr = gtf_attr_str(gene_id='g5', gene_name='celseq_gene-5',
+        exon_attr = gtf_attr_str(gene_id='g5', gene_name='celseq_gene-5', gene_biotype='protein_coding',
                                  transcript_id='tx5', exon_num=i)
         s_stream, e_stream = s_stream, s_stream + len_exon - 1
         exon = gtf_str(chrm='chr1', src=src,
@@ -375,7 +377,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
 
     s_stream = e_stream + 1 + len_intergenic
     # g6
-    g_attr = gtf_attr_str(gene_id='g6', gene_name='celseq2_gene-6')
+    g_attr = gtf_attr_str(gene_id='g6', gene_name='celseq2_gene-6', gene_biotype='protein_coding')
     g = gtf_str(chrm='chr1', src=src,
                 feature='gene',
                 start=s_stream,
@@ -386,7 +388,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
                 attr=g_attr)
     fout.write('{}\n'.format(g))
     out.append(g)
-    tx_attr = gtf_attr_str(gene_id='g6', gene_name='celseq_gene-6',
+    tx_attr = gtf_attr_str(gene_id='g6', gene_name='celseq_gene-6', gene_biotype='protein_coding',
                            transcript_id='tx6')
     tx = gtf_str(chrm='chr1', src=src,
                  feature='transcript',
@@ -398,7 +400,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
                  attr=tx_attr)
     fout.write('{}\n'.format(tx))
     out.append(tx)
-    exon_attr = gtf_attr_str(gene_id='g6', gene_name='celseq_gene-6',
+    exon_attr = gtf_attr_str(gene_id='g6', gene_name='celseq_gene-6', gene_biotype='protein_coding',
                              transcript_id='tx6', exon_num=1)
     exon = gtf_str(chrm='chr1', src=src,
                    feature='exon',
@@ -411,7 +413,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     fout.write('{}\n'.format(exon))
     out.append(exon)
     # g7
-    g_attr = gtf_attr_str(gene_id='g7', gene_name='celseq2_gene-7')
+    g_attr = gtf_attr_str(gene_id='g7', gene_name='celseq2_gene-7', gene_biotype='protein_coding')
     g = gtf_str(chrm='chr1', src=src,
                 feature='gene',
                 start=s_stream,
@@ -422,7 +424,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
                 attr=g_attr)
     fout.write('{}\n'.format(g))
     out.append(g)
-    tx_attr = gtf_attr_str(gene_id='g7', gene_name='celseq_gene-7',
+    tx_attr = gtf_attr_str(gene_id='g7', gene_name='celseq_gene-7', gene_biotype='protein_coding',
                            transcript_id='tx7')
     tx = gtf_str(chrm='chr1', src=src,
                  feature='transcript',
@@ -435,7 +437,7 @@ def dummy_gtf(saveto=None, len_exon=100, len_intron=200, len_intergenic=300):
     fout.write('{}\n'.format(tx))
     out.append(tx)
     for i in range(2):
-        exon_attr = gtf_attr_str(gene_id='g7', gene_name='celseq_gene-7',
+        exon_attr = gtf_attr_str(gene_id='g7', gene_name='celseq_gene-7', gene_biotype='protein_coding',
                                  transcript_id='tx7', exon_num=i + 1)
         s_stream, e_stream = s_stream, s_stream + len_exon - 1
         exon = gtf_str(chrm='chr1', src=src,

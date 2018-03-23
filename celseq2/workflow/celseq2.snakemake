@@ -47,6 +47,8 @@ STAR = config.get('STAR', None)
 GFF = config.get('GFF', None)
 FEATURE_ID = config.get('FEATURE_ID', 'gene_name')
 FEATURE_CONTENT = config.get('FEATURE_CONTENT', 'exon')
+GENE_BIOTYPE = config.get('GENE_BIOTYPE', None)
+if not GENE_BIOTYPE: GENE_BIOTYPE = ();
 
 ## Demultiplexing ##
 FASTQ_QUAL_MIN_OF_BC = config.get('FASTQ_QUAL_MIN_OF_BC', None)  # 10
@@ -222,7 +224,7 @@ rule setup_dir:
             mkfolder(d)
 
 ## HT-seq Count UMI ##
-rule cook_annotation:
+rule COOK_ANNOTATION:
     input:
         '_done_setupdir',
     output:
@@ -233,12 +235,57 @@ rule cook_annotation:
     run:
         _ = cook_anno_model(GFF, feature_atrr=FEATURE_ID,
                             feature_type=FEATURE_CONTENT,
+                            gene_types=GENE_BIOTYPE,
                             stranded=True,
                             dumpto=output.anno,
                             verbose=verbose)
         shell('touch {output.flag}')
 
 # Combo-demultiplexing
+rule COMBO_DEMULTIPLEXING:
+    input:
+        flag2 = '_done_annotation',
+        flag1 = '_done_setupdir',
+    output:
+        '_done_combodemultiplex', # dynamic() is not allowed if task being called on terminal
+    message: 'Performing combo-demultiplexing'
+    threads: len(item_names)
+    run:
+        # Demultiplx fastq in Process pool
+        p = Pool(threads)
+        for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
+            itemid_in = join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
+            try:
+                os.symlink(itemr1, join_path(itemid_in, 'R1.fastq.gz'))
+                os.symlink(itemr2, join_path(itemid_in, 'R2.fastq.gz'))
+            except OSError:
+                pass
+            itemid_fqs_dir = join_path(DIR_PROJ, SUBDIR_FASTQ, itemid)
+            itemid_log = join_path(DIR_PROJ, SUBDIR_DIAG, itemid,
+                                   'demultiplexing.log')
+            print_logger('Demultiplexing {}'.format(itemid))
+            cmd = " ".join(["bc_demultiplex",
+                            itemr1,
+                            itemr2,
+                            "--bc-index {}".format(BC_INDEX_FPATH),
+                            "--bc-seq-column {}".format(BC_SEQ_COLUMN),
+                            "--bc-index-used {}".format(itembc),
+                            "--min-bc-quality {}".format(FASTQ_QUAL_MIN_OF_BC),
+                            "--umi-start-position {}".format(
+                                UMI_START_POSITION),
+                            "--bc-start-position {}".format(BC_START_POSITION),
+                            "--umi-length {}".format(UMI_LENGTH),
+                            "--bc-length {}".format(BC_LENGTH),
+                            "--cut-length {}".format(CUT_LENGTH),
+                            "--out-dir  {}".format(itemid_fqs_dir),
+                            "--is-gzip ",
+                            "--stats-file {}".format(itemid_log)])
+            p.apply_async(shell, args=(cmd,))
+        p.close()
+        p.join()
+        shell('touch {output} ')
+
+
 rule combo_demultiplexing:
     input:
         flag2 = '_done_annotation',
@@ -392,8 +439,7 @@ rule count_umi:
         aln_diag = join_path(DIR_PROJ, SUBDIR_DIAG, '{itemid}', '{bc}.pkl'),
     message: 'Counting {input.sam}'
     run:
-        features_f, all_genes = pickle.load(open(input.gff, 'rb'))
-        all_genes = sorted(all_genes)
+        features_f, _ = pickle.load(open(input.gff, 'rb'))
         umi_cnt, umi_set, aln_cnt = count_umi(sam_fpath=input.sam,
                                               features=features_f,
                                               len_umi=UMI_LENGTH,
@@ -422,8 +468,7 @@ rule summarize_umi_matrix_per_item:
                           expid=sample_list, itemid=item_names),
         flag = '_done_umimatrix_per_item',
     run:
-        _, all_genes = pickle.load(open(input.gff, 'rb'))
-        all_genes = sorted(all_genes)
+        _, export_genes = pickle.load(open(input.gff, 'rb'))
 
         # item -> dict(cell_bc -> Counter(umi_vector))
         item_expr_matrix = defaultdict(dict)
@@ -437,10 +482,10 @@ rule summarize_umi_matrix_per_item:
             exp_id = SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']  # E1
 
             for bc, cnt in expr_dict.items():
-                expr_dict[bc] = pd.Series([cnt[x] for x in all_genes],
-                                          index=all_genes)
+                expr_dict[bc] = pd.Series([cnt[x] for x in export_genes],
+                                          index=export_genes)
 
-            expr_df = pd.DataFrame(expr_dict, index=all_genes).fillna(0)
+            expr_df = pd.DataFrame(expr_dict, index=export_genes).fillna(0)
             expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, item_id, 'expr.csv'))
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
@@ -464,8 +509,7 @@ rule summarize_umi_matrix_per_experiment:
                      expid=list(set(sample_list))),
         flag = '_done_umimatrix_per_experiment',
     run:
-        _, all_genes = pickle.load(open(input.gff, 'rb'))
-        all_genes = sorted(all_genes)
+        _, export_genes = pickle.load(open(input.gff, 'rb'))
 
         sample_list = SAMPLE_TABLE['SAMPLE_NAME'].values
 
@@ -485,7 +529,7 @@ rule summarize_umi_matrix_per_experiment:
                 exp_expr_matrix[exp_id][bc_name] = umiset_stream
                 continue
             umiset_cached = exp_expr_matrix[exp_id][bc_name]
-            for x in all_genes:
+            for x in export_genes:
                 y1 = exp_expr_matrix[exp_id][bc_name].get(x, set())
                 y2 = umiset_stream.get(x, set())
                 exp_expr_matrix[exp_id][bc_name][x] = y1 | y2
@@ -493,9 +537,9 @@ rule summarize_umi_matrix_per_experiment:
         for exp_id, expr_dict in exp_expr_matrix.items():
             for bc, cnt in expr_dict.items():
                 cnt = _flatten_umi_set(cnt)
-                expr_dict[bc] = pd.Series([cnt[x] for x in all_genes],
-                                          index=all_genes)
-            expr_df = pd.DataFrame(expr_dict, index=all_genes).fillna(0)
+                expr_dict[bc] = pd.Series([cnt[x] for x in export_genes],
+                                          index=export_genes)
+            expr_df = pd.DataFrame(expr_dict, index=export_genes).fillna(0)
             expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, 'expr.csv'))
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,

@@ -10,6 +10,20 @@
 
 ---
 
+## :fa-flag-checkered: **v0.4.7**
+
+:fa-calendar: **2018-03-23**
+
+:fa-star: **Features**
+
+- Support "gene_biotype" selection.
+- Better support SpatialTranscriptome data.
+    - `celseq2-to-st` understands `expr.csv` file
+    - `celseq2-to-st` recognizes "(1 out of many)" annotation inside GTF/GFF.
+- Robust design of work flow.
+
+---
+
 ## :fa-flag-checkered: **v0.4.4**
 
 :fa-calendar: **2018-02-13**
