@@ -184,20 +184,20 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
 
 def write_demultiplexing(stats, dict_bc_id2seq, stats_fpath):
     if stats_fpath is None:
-        stats_fpath = 'demultiplexing.log'
+        stats_fpath = 'demultiplexing.csv'
     try:
         fh_stats = open(stats_fpath, 'w')
     except Exception as e:
         raise Exception(e)
-    fh_stats.write('BC\tReads(#)\tReads(%)\n')
+    fh_stats.write('BC,Reads(#),Reads(%)\n')
 
     for bc_id, bc_seq in dict_bc_id2seq.items():
         # bc_id = '[{:04d}]'.format('-'.join(map(str, bc_id)))
-        formatter = '{:04d}-{}\t{}\t{:07.3f}\n'
+        formatter = '{:04d}-{},{},{:07.3f}\n'
         fh_stats.write(formatter.format(bc_id, bc_seq, stats[bc_seq],
                                         stats[bc_seq] / stats['total'] * 100))
 
-    formatter = '{}\t{}\t{:07.3f}\n'
+    formatter = '{},{},{:07.3f}\n'
     fh_stats.write(formatter.format('saved', stats['saved'],
                                     stats['saved'] / stats['total'] * 100))
     fh_stats.write(formatter.format('unknown', stats['unknown'],
