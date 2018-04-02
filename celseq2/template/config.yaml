@@ -1,38 +1,59 @@
-## CEL-seq2 Tech Setting ##
+####################################
+## Tech Setting
+####################################
 BC_INDEX_FPATH: '/absolute/path/to/wonderful_umi.tab'
-BC_SEQ_COLUMN: 1
+BC_SEQ_COLUMN: 0
 BC_IDs_DEFAULT: '1-96'
 UMI_START_POSITION: 0
 UMI_LENGTH: 6
 BC_START_POSITION: 6
 BC_LENGTH: 6
 
-## Tools ##
-# 'bowtie2' 'star'
+####################################
+## Alignment Tools
+####################################
+## Which RNA-seq aligner to use? 'bowtie2' or 'star'
 ALIGNER: 'bowtie2'
-BOWTIE2_INDEX_PREFIX: '/absolute/path/to/bowtie2_index'
+## What is the absolute path to command bowtie2?
 BOWTIE2: '/absolute/path/to/bowtie2'
-STAR_INDEX_DIR: '/absolute/path/to/star/folder'
+## What is the sharef prefix of bowtie2 index?
+BOWTIE2_INDEX_PREFIX: '/absolute/path/to/bowtie2_index'
+## What is the absolute path to command STAR?
 STAR: '/absolute/path/to/star'
+## Whare is the directory to save STAR index?
+STAR_INDEX_DIR: '/absolute/path/to/star/folder/'
 
+####################################
 ## Annotations ##
-# Path to GTF/GFF file
+####################################
+## Where is the GTF.gz/GFF.gz/GTF/GFF file?
 GFF: '/absolute/path/to/wonderful.gtf.gz'
-# Refer: http://htseq.readthedocs.io/en/master/count.html
+## Refer: http://htseq.readthedocs.io/en/master/count.html
+## What is considered the "gene"? 'gene_name' or 'gene_id'?
 FEATURE_ID: 'gene_name'
+## What is the content of the "gene"? Mostly 'exon'.
 FEATURE_CONTENT: 'exon'
-# GENE_BIOTYPE: ['protein_coding', 'lincRNA'] If nothing is set, report all.
+## Which type of genes to report?
 GENE_BIOTYPE:
+    - 'protein_coding'
+    - 'lincRNA'
+## If nothing set as below, all genes are reported.
+## GENE_BIOTYPE:
 
-## Demultiplexing ##
+####################################
+## Demultiplexing
+####################################
 FASTQ_QUAL_MIN_OF_BC: 10
 CUT_LENGTH: 35
+SAVE_UNKNOWN_BC_FASTQ: false
 
-## Alignment ##
-
-## UMI Count ##
+####################################
+## UMI Count
+####################################
 ALN_QUAL_MIN: 0
 
-## Running Parameters ##
+####################################
+## Running Parameters
+####################################
 num_threads: 15
 verbose: True

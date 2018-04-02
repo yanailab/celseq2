@@ -54,6 +54,7 @@ if not GENE_BIOTYPE: GENE_BIOTYPE = ();
 ## Demultiplexing ##
 FASTQ_QUAL_MIN_OF_BC = config.get('FASTQ_QUAL_MIN_OF_BC', None)  # 10
 CUT_LENGTH = config.get('CUT_LENGTH', None)  # 35
+SAVE_UNKNOWN_BC_FASTQ = config.get('SAVE_UNKNOWN_BC_FASTQ', False) # False
 ## Alignment ##
 ALIGNER = config.get('ALIGNER', None)  # 'bowtie2', 'star'
 assert (ALIGNER), 'Error: Specify aligner.'
@@ -241,7 +242,9 @@ rule combo_demultiplexing:
     output:
         fq = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq')),
     message: 'Performing combo-demultiplexing'
-    params: jobs = len(item_names)
+    params:
+        jobs = len(item_names),
+        save_unknown_bc_fastq = SAVE_UNKNOWN_BC_FASTQ,
     run:
         # Demultiplx fastq in Process pool
         p = Pool(params.jobs)
@@ -275,6 +278,9 @@ rule combo_demultiplexing:
                             "--out-dir  {}".format(itemid_fqs_dir),
                             "--is-gzip ",
                             "--stats-file {}".format(itemid_log)])
+            if params.save_unknown_bc_fastq:
+                cmd += ' --save-unknown-bc-fastq '
+
             p.apply_async(shell, args=(cmd,))
         p.close()
         p.join()

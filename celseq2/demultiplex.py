@@ -77,6 +77,7 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
                    len_umi=6, len_bc=6, len_tx=35,
                    bc_qual_min=10,
                    is_gzip=True,
+                   save_unknown_bc_fastq=False,
                    do_bc_rev_complement=False,
                    do_tx_rev_complement=False,
                    verbose=False):
@@ -153,12 +154,13 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
         try:
             fhout = bc_fhout[cell_bc]
         except KeyError:
-            fhout = bc_fhout['UNKNOWNBC_R1']
-            fhout.write('{}\n{}\n{}\n{}\n'.format(umibc_name, umibc_seq,
-                                                  "+", umibc_qualstr))
-            fhout = bc_fhout['UNKNOWNBC_R2']
-            fhout.write('{}\n{}\n{}\n{}\n'.format(tx_name, tx_seq,
-                                                  "+", tx_qualstr))
+            if save_unknown_bc_fastq:
+                fhout = bc_fhout['UNKNOWNBC_R1']
+                fhout.write('{}\n{}\n{}\n{}\n'.format(umibc_name, umibc_seq,
+                                                      "+", umibc_qualstr))
+                fhout = bc_fhout['UNKNOWNBC_R2']
+                fhout.write('{}\n{}\n{}\n{}\n'.format(tx_name, tx_seq,
+                                                      "+", tx_qualstr))
             sample_counter['unknown'] += 1
             continue
 
@@ -247,6 +249,9 @@ def main():
                         help='Length of CELSeq barcode (default=6)')
     parser.add_argument('--cut-length', metavar='N', type=int, default=35,
                         help='Length of read on R2 to be mapped. (default=35)')
+    parser.add_argument('--save-unknown-bc-fastq',
+                        dest='save_unknown_bc_fastq', action='store_true')
+    parser.set_defaults(save_unknown_bc_fastq=False)
     parser.add_argument('--verbose', dest='verbose', action='store_true')
     parser.set_defaults(verbose=False)
 
@@ -269,6 +274,7 @@ def main():
                          len_tx=args.cut_length,
                          bc_qual_min=args.min_bc_quality,
                          is_gzip=args.is_gzip,
+                         save_unknown_bc_fastq=args.save_unknown_bc_fastq,
                          do_bc_rev_complement=False,
                          do_tx_rev_complement=False,
                          verbose=args.verbose)
