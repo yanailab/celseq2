@@ -66,8 +66,8 @@ STRANDED = config.get('stranded', 'yes')
 
 ## Running Parameters ##
 # bc_ids_used=config.get('bc_ids_used', None)  # '1,2,3,4-5'
-num_threads = config.get('num_threads', None)  # 5
-verbose = config.get('verbose', None)  # True
+num_threads = config.get('num_threads', 16)  # 5
+verbose = config.get('verbose', True)  # True
 
 
 #######################
@@ -125,8 +125,11 @@ rule all:
         '_done_annotation',
         '_done_UMI',
         '_done_report',
+    output:
+        touch('_DONE'),
     run:
         if glob.glob('celseq2_job*.sh*'):
+            mkfolder(SUBDIR_QSUB)
             shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
 
 '''
@@ -198,44 +201,6 @@ rule celseq2:
 #         for d in output.dir3:
 #             mkfolder(d)
 
-## HT-seq Count UMI ##
-rule COOK_ANNOTATION:
-    input:
-        SAMPLE_TABLE_FPATH,
-    output:
-        anno_pkl = join_path(DIR_PROJ, SUBDIR_ANNO, base_name(GFF) + '.pickle'),
-        anno_csv = join_path(DIR_PROJ, SUBDIR_ANNO, base_name(GFF) + '.csv'),
-        flag = '_done_annotation',
-    params:
-        gene_type = GENE_BIOTYPE
-    priority: 100
-    message: 'Cooking Annotation'
-    run:
-        from genometools.ensembl.annotations import get_genes
-
-        features, exported_genes = cook_anno_model(
-            GFF, feature_atrr=FEATURE_ID,
-            feature_type=FEATURE_CONTENT,
-            gene_types=[],  # defautl to all genes
-            stranded=True,
-            dumpto=None,  # manual export
-            verbose=verbose)
-
-        if params.gene_type:
-            print_logger('Types of reported gene: {}.'.format(
-                ', '.join(params.gene_type)))
-            gene_df = get_genes(GFF, valid_biotypes = set(params.gene_type))
-            exported_genes = sorted(gene_df['name'].values)
-            print_logger('Number of reported genes: {}.'.format(
-                len(exported_genes)))
-            gene_df.to_csv(output.anno_csv)
-        else:
-            shell('touch {output.anno_csv}')
-
-        with open(output.anno_pkl, 'wb') as fh:
-            pickle.dump( (features, exported_genes), fh)
-
-        shell('touch {output.flag}')
 
 rule COUNT_MATRIX:
     input:
@@ -276,10 +241,10 @@ rule combo_demultiplexing:
     output:
         fq = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq')),
     message: 'Performing combo-demultiplexing'
-    threads: len(item_names)
+    params: jobs = len(item_names)
     run:
         # Demultiplx fastq in Process pool
-        p = Pool(threads)
+        p = Pool(params.jobs)
         for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
             itemid_in = join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
             mkfolder(itemid_in)
@@ -411,6 +376,46 @@ if ALIGNER == 'star':
                 log_content = fin.readlines()
             df = parse_star_report('\t'.join(log_content))
             pickle.dump(df, open(output.report, 'wb'))
+
+
+## HT-seq Count UMI ##
+rule COOK_ANNOTATION:
+    input:
+        SAMPLE_TABLE_FPATH,
+    output:
+        anno_pkl = join_path(DIR_PROJ, SUBDIR_ANNO, base_name(GFF) + '.pickle'),
+        anno_csv = join_path(DIR_PROJ, SUBDIR_ANNO, base_name(GFF) + '.csv'),
+        flag = '_done_annotation',
+    params:
+        gene_type = GENE_BIOTYPE
+    priority: 100
+    message: 'Cooking Annotation'
+    run:
+        from genometools.ensembl.annotations import get_genes
+
+        features, exported_genes = cook_anno_model(
+            GFF, feature_atrr=FEATURE_ID,
+            feature_type=FEATURE_CONTENT,
+            gene_types=[],  # defautl to all genes
+            stranded=True,
+            dumpto=None,  # manual export
+            verbose=verbose)
+
+        if params.gene_type:
+            print_logger('Types of reported gene: {}.'.format(
+                ', '.join(params.gene_type)))
+            gene_df = get_genes(GFF, valid_biotypes = set(params.gene_type))
+            exported_genes = sorted(gene_df['name'].values)
+            print_logger('Number of reported genes: {}.'.format(
+                len(exported_genes)))
+            gene_df.to_csv(output.anno_csv)
+        else:
+            shell('touch {output.anno_csv}')
+
+        with open(output.anno_pkl, 'wb') as fh:
+            pickle.dump( (features, exported_genes), fh)
+
+        shell('touch {output.flag}')
 
 
 rule count_umi:
