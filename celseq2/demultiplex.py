@@ -77,6 +77,7 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
                    len_umi=6, len_bc=6, len_tx=35,
                    bc_qual_min=10,
                    is_gzip=True,
+                   save_unknown_bc_fastq=False,
                    do_bc_rev_complement=False,
                    do_tx_rev_complement=False,
                    verbose=False):
@@ -153,12 +154,13 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
         try:
             fhout = bc_fhout[cell_bc]
         except KeyError:
-            fhout = bc_fhout['UNKNOWNBC_R1']
-            fhout.write('{}\n{}\n{}\n{}\n'.format(umibc_name, umibc_seq,
-                                                  "+", umibc_qualstr))
-            fhout = bc_fhout['UNKNOWNBC_R2']
-            fhout.write('{}\n{}\n{}\n{}\n'.format(tx_name, tx_seq,
-                                                  "+", tx_qualstr))
+            if save_unknown_bc_fastq:
+                fhout = bc_fhout['UNKNOWNBC_R1']
+                fhout.write('{}\n{}\n{}\n{}\n'.format(umibc_name, umibc_seq,
+                                                      "+", umibc_qualstr))
+                fhout = bc_fhout['UNKNOWNBC_R2']
+                fhout.write('{}\n{}\n{}\n{}\n'.format(tx_name, tx_seq,
+                                                      "+", tx_qualstr))
             sample_counter['unknown'] += 1
             continue
 
@@ -184,20 +186,20 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
 
 def write_demultiplexing(stats, dict_bc_id2seq, stats_fpath):
     if stats_fpath is None:
-        stats_fpath = 'demultiplexing.log'
+        stats_fpath = 'demultiplexing.csv'
     try:
         fh_stats = open(stats_fpath, 'w')
     except Exception as e:
         raise Exception(e)
-    fh_stats.write('BC\tReads(#)\tReads(%)\n')
+    fh_stats.write('BC,Reads(#),Reads(%)\n')
 
     for bc_id, bc_seq in dict_bc_id2seq.items():
         # bc_id = '[{:04d}]'.format('-'.join(map(str, bc_id)))
-        formatter = '{:04d}-{}\t{}\t{:07.3f}\n'
+        formatter = '{:04d}-{},{},{:07.3f}\n'
         fh_stats.write(formatter.format(bc_id, bc_seq, stats[bc_seq],
                                         stats[bc_seq] / stats['total'] * 100))
 
-    formatter = '{}\t{}\t{:07.3f}\n'
+    formatter = '{},{},{:07.3f}\n'
     fh_stats.write(formatter.format('saved', stats['saved'],
                                     stats['saved'] / stats['total'] * 100))
     fh_stats.write(formatter.format('unknown', stats['unknown'],
@@ -247,6 +249,9 @@ def main():
                         help='Length of CELSeq barcode (default=6)')
     parser.add_argument('--cut-length', metavar='N', type=int, default=35,
                         help='Length of read on R2 to be mapped. (default=35)')
+    parser.add_argument('--save-unknown-bc-fastq',
+                        dest='save_unknown_bc_fastq', action='store_true')
+    parser.set_defaults(save_unknown_bc_fastq=False)
     parser.add_argument('--verbose', dest='verbose', action='store_true')
     parser.set_defaults(verbose=False)
 
@@ -269,6 +274,7 @@ def main():
                          len_tx=args.cut_length,
                          bc_qual_min=args.min_bc_quality,
                          is_gzip=args.is_gzip,
+                         save_unknown_bc_fastq=args.save_unknown_bc_fastq,
                          do_bc_rev_complement=False,
                          do_tx_rev_complement=False,
                          verbose=args.verbose)

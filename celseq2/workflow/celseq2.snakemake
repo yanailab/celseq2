@@ -18,6 +18,7 @@ import tempfile
 import shutil
 import os
 
+
 ## Inforamtion ##
 # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
 DIR_PROJ = config.get('output_dir', None)
@@ -53,6 +54,7 @@ if not GENE_BIOTYPE: GENE_BIOTYPE = ();
 ## Demultiplexing ##
 FASTQ_QUAL_MIN_OF_BC = config.get('FASTQ_QUAL_MIN_OF_BC', None)  # 10
 CUT_LENGTH = config.get('CUT_LENGTH', None)  # 35
+SAVE_UNKNOWN_BC_FASTQ = config.get('SAVE_UNKNOWN_BC_FASTQ', False) # False
 ## Alignment ##
 ALIGNER = config.get('ALIGNER', None)  # 'bowtie2', 'star'
 assert (ALIGNER), 'Error: Specify aligner.'
@@ -65,8 +67,8 @@ STRANDED = config.get('stranded', 'yes')
 
 ## Running Parameters ##
 # bc_ids_used=config.get('bc_ids_used', None)  # '1,2,3,4-5'
-num_threads = config.get('num_threads', None)  # 5
-verbose = config.get('verbose', None)  # True
+num_threads = config.get('num_threads', 16)  # 5
+verbose = config.get('verbose', True)  # True
 
 
 #######################
@@ -107,10 +109,10 @@ SUBDIRS = [SUBDIR_INPUT,
            SUBDIR_LOG, SUBDIR_QSUB, SUBDIR_DIAG, SUBDIR_ANNO
            ]
 
-aln_diagnose_item = ["_unmapped",
-                     "_low_map_qual", '_multimapped', "_uniquemapped",
-                     "_no_feature", "_ambiguous",
-                     "_total"]
+# aln_diagnose_item = ["_unmapped",
+#                      "_low_map_qual", '_multimapped', "_uniquemapped",
+#                      "_no_feature", "_ambiguous",
+#                      "_total"]
 ## Dev ##
 
 #####################
@@ -121,38 +123,15 @@ workdir: DIR_PROJ
 
 rule all:
     input:
+        '_done_annotation',
         '_done_UMI',
         '_done_report',
-        '_done_annotation',
-        '_done_umimatrix_per_experiment',
+    output:
+        touch('_DONE'),
     run:
         if glob.glob('celseq2_job*.sh*'):
+            mkfolder(SUBDIR_QSUB)
             shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
-
-
-
-rule COUNT_MATRIX:
-    input:
-        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
-                     expid=list(set(sample_list))),
-        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
-                     expid=list(set(sample_list))),
-
-    output:
-        touch('_done_UMI')
-    message: 'Finished counting UMI-count matrix.'
-    run:
-        if ALIGNER == 'star':
-            shell('rm {}'.format('_done_star_genome_loaded'))
-            print('Free memory loaded by STAR', flush=True)
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                cmd = 'STAR '
-                cmd += '--genomeLoad Remove '
-                cmd += '--genomeDir {STAR_INDEX_DIR} '
-                cmd += '--outFileNamePrefix '
-                cmd += join_path(tmpdirname, '')
-                shell(cmd)
-        print_logger('UMI-count matrix is saved at {}'.format(input.csv))
 
 '''
 rule celseq2:
@@ -201,112 +180,87 @@ rule celseq2:
         print_logger('Expression UMI matrix is saved at {}'.format(input.csv))
 '''
 
-rule setup_dir:
-    input: SAMPLE_TABLE_FPATH
-    output:
-        touch('_done_setupdir'),
-        dir1 = SUBDIRS,
-        dir2 = expand(join_path('{subdir}', '{itemid}'),
-                      subdir=[SUBDIR_INPUT,
-                              SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_DIAG,
-                              SUBDIR_UMI_CNT, SUBDIR_UMI_SET, SUBDIR_LOG],
-                      itemid=item_names),
-        dir3 = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', '{itemid}'),
-                      zip, expid=sample_list, itemid=item_names),
+# rule setup_dir:
+#     input: SAMPLE_TABLE_FPATH
+#     output:
+#         touch('_done_setupdir'),
+#         dir1 = SUBDIRS,
+#         dir2 = expand(join_path('{subdir}', '{itemid}'),
+#                       subdir=[SUBDIR_INPUT,
+#                               SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_DIAG,
+#                               SUBDIR_UMI_CNT, SUBDIR_UMI_SET, SUBDIR_LOG],
+#                       itemid=item_names),
+#         dir3 = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', '{itemid}'),
+#                       zip, expid=sample_list, itemid=item_names),
 
-    message: 'Setting up project directory.'
-    run:
-        for d in output.dir1:
-            mkfolder(d)
-        for d in output.dir2:
-            mkfolder(d)
-        for d in output.dir3:
-            mkfolder(d)
+#     message: 'Setting up project directory.'
+#     run:
+#         for d in output.dir1:
+#             mkfolder(d)
+#         for d in output.dir2:
+#             mkfolder(d)
+#         for d in output.dir3:
+#             mkfolder(d)
 
-## HT-seq Count UMI ##
-rule COOK_ANNOTATION:
+
+rule COUNT_MATRIX:
     input:
-        '_done_setupdir',
+        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+                     expid=list(set(sample_list))),
+        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+                     expid=list(set(sample_list))),
     output:
-        anno = join_path(DIR_PROJ, SUBDIR_ANNO,
-                         base_name(GFF) + '.pickle'),
-        flag = '_done_annotation',
-    message: 'Cooking Annotation'
+        touch('_done_UMI')
+    message: 'Finished counting UMI-count matrix.'
     run:
-        _ = cook_anno_model(GFF, feature_atrr=FEATURE_ID,
-                            feature_type=FEATURE_CONTENT,
-                            gene_types=GENE_BIOTYPE,
-                            stranded=True,
-                            dumpto=output.anno,
-                            verbose=verbose)
-        shell('touch {output.flag}')
+        if ALIGNER == 'star':
+            shell('rm {}'.format('_done_star_genome_loaded'))
+            print('Free memory loaded by STAR', flush=True)
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                cmd = 'STAR '
+                cmd += '--genomeLoad Remove '
+                cmd += '--genomeDir {STAR_INDEX_DIR} '
+                cmd += '--outFileNamePrefix '
+                cmd += join_path(tmpdirname, '')
+                shell(cmd)
+        print_logger('UMI-count matrix is saved at {}'.format(input.csv))
+
+rule REPORT_ALIGNMENT_LOG:
+    input:
+        report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
+                                  'alignment_'+ALIGNER+'.csv'),
+                        itemid=item_names),
+    output:
+        touch('_done_report')
+
 
 # Combo-demultiplexing
-rule COMBO_DEMULTIPLEXING:
-    input:
-        flag2 = '_done_annotation',
-        flag1 = '_done_setupdir',
-    output:
-        '_done_combodemultiplex', # dynamic() is not allowed if task being called on terminal
-    message: 'Performing combo-demultiplexing'
-    threads: len(item_names)
-    run:
-        # Demultiplx fastq in Process pool
-        p = Pool(threads)
-        for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
-            itemid_in = join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
-            try:
-                os.symlink(itemr1, join_path(itemid_in, 'R1.fastq.gz'))
-                os.symlink(itemr2, join_path(itemid_in, 'R2.fastq.gz'))
-            except OSError:
-                pass
-            itemid_fqs_dir = join_path(DIR_PROJ, SUBDIR_FASTQ, itemid)
-            itemid_log = join_path(DIR_PROJ, SUBDIR_DIAG, itemid,
-                                   'demultiplexing.log')
-            print_logger('Demultiplexing {}'.format(itemid))
-            cmd = " ".join(["bc_demultiplex",
-                            itemr1,
-                            itemr2,
-                            "--bc-index {}".format(BC_INDEX_FPATH),
-                            "--bc-seq-column {}".format(BC_SEQ_COLUMN),
-                            "--bc-index-used {}".format(itembc),
-                            "--min-bc-quality {}".format(FASTQ_QUAL_MIN_OF_BC),
-                            "--umi-start-position {}".format(
-                                UMI_START_POSITION),
-                            "--bc-start-position {}".format(BC_START_POSITION),
-                            "--umi-length {}".format(UMI_LENGTH),
-                            "--bc-length {}".format(BC_LENGTH),
-                            "--cut-length {}".format(CUT_LENGTH),
-                            "--out-dir  {}".format(itemid_fqs_dir),
-                            "--is-gzip ",
-                            "--stats-file {}".format(itemid_log)])
-            p.apply_async(shell, args=(cmd,))
-        p.close()
-        p.join()
-        shell('touch {output} ')
-
-
 rule combo_demultiplexing:
-    input:
-        flag2 = '_done_annotation',
-        flag1 = '_done_setupdir',
+    input: SAMPLE_TABLE_FPATH,
+        # flag2 = '_done_annotation',
+        # flag1 = '_done_setupdir',
     output:
         fq = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq')),
     message: 'Performing combo-demultiplexing'
-    threads: len(item_names)
+    params:
+        jobs = len(item_names),
+        save_unknown_bc_fastq = SAVE_UNKNOWN_BC_FASTQ,
     run:
         # Demultiplx fastq in Process pool
-        p = Pool(threads)
+        p = Pool(params.jobs)
         for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
             itemid_in = join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
+            mkfolder(itemid_in)
             try:
                 os.symlink(itemr1, join_path(itemid_in, 'R1.fastq.gz'))
                 os.symlink(itemr2, join_path(itemid_in, 'R2.fastq.gz'))
             except OSError:
                 pass
             itemid_fqs_dir = join_path(DIR_PROJ, SUBDIR_FASTQ, itemid)
-            itemid_log = join_path(DIR_PROJ, SUBDIR_DIAG, itemid,
-                                   'demultiplexing.log')
+
+            mkfolder(join_path(DIR_PROJ, SUBDIR_REPORT, itemid))
+            itemid_log = join_path(DIR_PROJ, SUBDIR_REPORT, itemid,
+                                   'demultiplexing.csv')
             print_logger('Demultiplexing {}'.format(itemid))
             cmd = " ".join(["bc_demultiplex",
                             itemr1,
@@ -324,6 +278,9 @@ rule combo_demultiplexing:
                             "--out-dir  {}".format(itemid_fqs_dir),
                             "--is-gzip ",
                             "--stats-file {}".format(itemid_log)])
+            if params.save_unknown_bc_fastq:
+                cmd += ' --save-unknown-bc-fastq '
+
             p.apply_async(shell, args=(cmd,))
         p.close()
         p.join()
@@ -427,11 +384,52 @@ if ALIGNER == 'star':
             pickle.dump(df, open(output.report, 'wb'))
 
 
+## HT-seq Count UMI ##
+rule COOK_ANNOTATION:
+    input:
+        SAMPLE_TABLE_FPATH,
+    output:
+        anno_pkl = join_path(DIR_PROJ, SUBDIR_ANNO, base_name(GFF) + '.pickle'),
+        anno_csv = join_path(DIR_PROJ, SUBDIR_ANNO, base_name(GFF) + '.csv'),
+        flag = '_done_annotation',
+    params:
+        gene_type = GENE_BIOTYPE
+    priority: 100
+    message: 'Cooking Annotation'
+    run:
+        from genometools.ensembl.annotations import get_genes
+
+        features, exported_genes = cook_anno_model(
+            GFF, feature_atrr=FEATURE_ID,
+            feature_type=FEATURE_CONTENT,
+            gene_types=[],  # defautl to all genes
+            stranded=True,
+            dumpto=None,  # manual export
+            verbose=verbose)
+
+        if params.gene_type:
+            print_logger('Types of reported gene: {}.'.format(
+                ', '.join(params.gene_type)))
+            gene_df = get_genes(GFF, valid_biotypes = set(params.gene_type))
+            exported_genes = sorted(gene_df['name'].values)
+            print_logger('Number of reported genes: {}.'.format(
+                len(exported_genes)))
+            gene_df.to_csv(output.anno_csv)
+        else:
+            shell('touch {output.anno_csv}')
+
+        with open(output.anno_pkl, 'wb') as fh:
+            pickle.dump( (features, exported_genes), fh)
+
+        shell('touch {output.flag}')
+
+
 rule count_umi:
     input:
-        gff = join_path(DIR_PROJ, SUBDIR_ANNO,
-                        base_name(GFF) + '.pickle'),
-        flag = '_done_annotation',
+        # gff = join_path(DIR_PROJ, SUBDIR_ANNO,
+        #                 base_name(GFF) + '.pickle'),
+        # flag = '_done_annotation',
+        gff = rules.COOK_ANNOTATION.output.anno_pkl,
         sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
     output:
         umicnt = join_path(DIR_PROJ, SUBDIR_UMI_CNT, '{itemid}', '{bc}.pkl'),
@@ -454,8 +452,9 @@ rule count_umi:
 # - regular umi-count using *_umicnt.pkl -> umi_count_matrix replicates/lanes per plate
 rule summarize_umi_matrix_per_item:
     input:
-        gff = join_path(DIR_PROJ, SUBDIR_ANNO,
-                        base_name(GFF) + '.pickle'),
+        # gff = join_path(DIR_PROJ, SUBDIR_ANNO,
+        #                 base_name(GFF) + '.pickle'),
+        gff = rules.COOK_ANNOTATION.output.anno_pkl,
         umicnt = dynamic(join_path(DIR_PROJ, SUBDIR_UMI_CNT,
                                    '{itemid}', '{bc}.pkl')),
     output:
@@ -497,8 +496,9 @@ rule summarize_umi_matrix_per_item:
 # - merge umi-count using *_umiset.pkl -> correct umi count per experiment/plate
 rule summarize_umi_matrix_per_experiment:
     input:
-        gff = join_path(DIR_PROJ, SUBDIR_ANNO,
-                        base_name(GFF) + '.pickle'),
+        # gff = join_path(DIR_PROJ, SUBDIR_ANNO,
+        #                 base_name(GFF) + '.pickle'),
+        gff = rules.COOK_ANNOTATION.output.anno_pkl,
         umiset = dynamic(join_path(DIR_PROJ, SUBDIR_UMI_SET,
                                    '{itemid}', '{bc}.pkl')),
     output:
@@ -548,12 +548,6 @@ rule summarize_umi_matrix_per_experiment:
         shell('touch {output.flag} ')
 
 
-rule REPORT_ALIGNMENT_LOG:
-    input:
-        report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
-                                  'alignment_'+ALIGNER+'.csv'),
-                        itemid=item_names),
-
 rule report_alignment_log:
     input:
         df = dynamic(join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}', ALIGNER,
@@ -561,7 +555,6 @@ rule report_alignment_log:
     output:
         report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
                         'alignment_'+ALIGNER+'.csv'), itemid=item_names),
-        flag = '_done_report',
 
     run:
         for item in item_names:
@@ -582,7 +575,6 @@ rule report_alignment_log:
                               report_names=logs_name_item,
                               aligner_name=ALIGNER,
                               savetocsv=report_item)
-        shell('touch {output.flag} ')
 
 # rule summarize_alignment_diagnose:
 #     input:
