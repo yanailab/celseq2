@@ -27,6 +27,7 @@ Select optional parameters from snakemake.snakemake():
     * -j
     * --cluster
     * -n
+    * --notemp (--nt)
 
 Refs:
     - https://snakemake.readthedocs.io/en/stable/api_reference/snakemake.html
@@ -65,6 +66,11 @@ def get_argument_parser():
         help="Read has to be mapped to the opposite strand as the feature")
 
     parser.add_argument(
+        "--celseq2-to-st", "--st",
+        action="store_true", default=False,
+        help="Rotate the UMI-count matrix to a shape of spots by genes.")
+
+    parser.add_argument(
         "--cores", "--jobs", "-j",
         action="store",
         nargs="?",
@@ -98,7 +104,10 @@ def get_argument_parser():
         "--ignore-incomplete", "--ii",
         action="store_true",
         help="Do not check for incomplete output files.")
-
+    parser.add_argument(
+        "--notemp", "--nt",
+        action="store_true",
+        help="Ignore temp() declarations.")
     parser.add_argument(
         "--version", "-v",
         action="version",
@@ -120,7 +129,8 @@ def main():
         configfile=args.config_file,
         config={'output_dir': args.output_dir,
                 'experiment_table': args.experiment_table,
-                'stranded': stranded},
+                'stranded': stranded,
+                'run_celseq2_to_st': args.celseq2_to_st},
 
         printshellcmds=True,
         printreason=True,
@@ -139,7 +149,8 @@ def main():
         nodes=args.cores,
 
         force_incomplete=args.rerun_incomplete,
-        ignore_incomplete=args.ignore_incomplete)
+        ignore_incomplete=args.ignore_incomplete,
+        notemp=args.notemp)
 
     sys.exit(0 if success else 1)
 
