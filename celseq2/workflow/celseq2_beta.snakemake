@@ -1,0 +1,595 @@
+######################################################################
+## Dependencies ##
+from celseq2.helper import join_path, base_name, dir_name, print_logger
+from celseq2.helper import rmfolder, mkfolder, is_nonempty_file
+from celseq2.helper import cook_sample_sheet, popen_communicate
+from celseq2.prepare_annotation_model import cook_anno_model
+from celseq2.count_umi import count_umi, _flatten_umi_set
+from celseq2.parse_log import parse_bowtie2_report, parse_star_report, merge_reports
+import pandas as pd
+import glob
+import pickle
+
+from collections import Counter, defaultdict
+from multiprocessing import Pool, cpu_count
+
+import re
+import tempfile
+import shutil
+import os
+
+
+## Inforamtion ##
+# '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
+DIR_PROJ = config.get('output_dir', None)
+
+## Sample Sheet ##
+SAMPLE_TABLE_FPATH = config.get('experiment_table', None)
+SAMPLE_TABLE = cook_sample_sheet(SAMPLE_TABLE_FPATH)  # ''
+
+## CEL-seq2 Tech Setting ##
+# '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
+BC_INDEX_FPATH = config.get('BC_INDEX_FPATH', None)
+BC_IDs_DEFAULT = config.get('BC_IDs_DEFAULT', None)  # '1-96'
+BC_SEQ_COLUMN = config.get('BC_SEQ_COLUMN', None)
+UMI_START_POSITION = config.get('UMI_START_POSITION', None)
+BC_START_POSITION = config.get('BC_START_POSITION', None)
+UMI_LENGTH = config.get('UMI_LENGTH', None)  # 6
+BC_LENGTH = config.get('BC_LENGTH', None)  # 6
+
+## Tools ##
+# '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
+BOWTIE2_INDEX_PREFIX = config.get('BOWTIE2_INDEX_PREFIX', None)
+BOWTIE2 = config.get('BOWTIE2', None)  # '/local/apps/bowtie2/2.3.1/bowtie2'
+STAR_INDEX_DIR = config.get('STAR_INDEX_DIR', None)
+STAR = config.get('STAR', None)
+## Annotations ##
+# '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
+GFF = config.get('GFF', None)
+FEATURE_ID = config.get('FEATURE_ID', 'gene_name')
+FEATURE_CONTENT = config.get('FEATURE_CONTENT', 'exon')
+GENE_BIOTYPE = config.get('GENE_BIOTYPE', None)
+if not GENE_BIOTYPE: GENE_BIOTYPE = ();
+
+## Demultiplexing ##
+FASTQ_QUAL_MIN_OF_BC = config.get('FASTQ_QUAL_MIN_OF_BC', None)  # 10
+CUT_LENGTH = config.get('CUT_LENGTH', None)  # 35
+SAVE_UNKNOWN_BC_FASTQ = config.get('SAVE_UNKNOWN_BC_FASTQ', False) # False
+## Alignment ##
+ALIGNER = config.get('ALIGNER', None)  # 'bowtie2', 'star'
+assert (ALIGNER), 'Error: Specify aligner.'
+assert (ALIGNER in ['bowtie2', 'star']), 'Error: Unknown aligner.'
+
+## UMI Count ##
+ALN_QUAL_MIN = config.get('ALN_QUAL_MIN', None)  # 0
+STRANDED = config.get('stranded', 'yes')
+
+
+## Running Parameters ##
+# bc_ids_used=config.get('bc_ids_used', None)  # '1,2,3,4-5'
+num_threads = config.get('num_threads', 16)  # 5
+verbose = config.get('verbose', True)  # True
+
+RUN_CELSEQ2_TO_ST = config.get('run_celseq2_to_st', False)
+
+#######################
+## Pipeline reserved ##
+#######################
+item_names = list(SAMPLE_TABLE.index)
+# expand('{r1_fpath}', r1_fpath=SAMPLE_TABLE['R1'].values)
+sample_list = SAMPLE_TABLE['SAMPLE_NAME'].values
+# expand('{r2_fpath}', r2_fpath=SAMPLE_TABLE['R2'].values)
+R1 = SAMPLE_TABLE['R1'].values
+R2 = SAMPLE_TABLE['R2'].values
+bc_used = SAMPLE_TABLE['CELL_BARCODES_INDEX'].values
+
+
+if not DIR_PROJ:
+    print_logger('Please specify configuration for pipeline\n')
+    exit(1)
+if R1 is None or R2 is None:
+    print_logger('Please specify reads file\n')
+    exit(1)
+
+SUBDIR_INPUT = 'input'
+SUBDIR_FASTQ = '.small_fq'
+SUBDIR_ALIGN = '.small_sam'
+SUBDIR_UMI_CNT = '.small_umi_count'
+SUBDIR_UMI_SET = '.small_umi_set'
+SUBDIR_EXPR = 'expr'
+SUBDIR_ST = 'ST'
+SUBDIR_LOG = '.small_log'
+SUBDIR_QSUB = 'qsub_log'
+SUBDIR_DIAG = '.small_diagnose'
+SUBDIR_ANNO = '.annotation'
+SUBDIR_REPORT = 'report'
+
+SUBDIRS = [SUBDIR_INPUT,
+           SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_UMI_CNT, SUBDIR_UMI_SET,
+           SUBDIR_EXPR,
+           SUBDIR_REPORT,
+           SUBDIR_LOG, SUBDIR_QSUB, SUBDIR_DIAG, SUBDIR_ANNO
+           ]
+
+# aln_diagnose_item = ["_unmapped",
+#                      "_low_map_qual", '_multimapped', "_uniquemapped",
+#                      "_no_feature", "_ambiguous",
+#                      "_total"]
+## Dev ##
+
+#####################
+## Snakemake rules ##
+#####################
+
+workdir: DIR_PROJ
+
+if RUN_CELSEQ2_TO_ST:
+    rule all:
+        input:
+            # '_done_annotation',
+            '_done_UMI',
+            # '_done_report',
+            '_done_ST',
+        output:
+            touch('_DONE'),
+        run:
+            if glob.glob('celseq2_job*.sh*'):
+                mkfolder(SUBDIR_QSUB)
+                shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
+else:
+    rule all:
+        input:
+            # '_done_annotation',
+            '_done_UMI',
+            # '_done_report',
+        output:
+            touch('_DONE'),
+        run:
+            if glob.glob('celseq2_job*.sh*'):
+                mkfolder(SUBDIR_QSUB)
+                shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
+
+
+rule COUNT_MATRIX:
+    input:
+        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+                     expid=list(set(sample_list))),
+        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+                     expid=list(set(sample_list))),
+    output:
+        touch('_done_UMI')
+    message: 'Finished counting UMI-count matrix.'
+    run:
+        # if ALIGNER == 'star':
+        #     shell('rm {}'.format('_done_star_genome_loaded'))
+        #     print('Free memory loaded by STAR', flush=True)
+        #     with tempfile.TemporaryDirectory() as tmpdirname:
+        #         cmd = 'STAR '
+        #         cmd += '--genomeLoad Remove '
+        #         cmd += '--genomeDir {STAR_INDEX_DIR} '
+        #         cmd += '--outFileNamePrefix '
+        #         cmd += join_path(tmpdirname, '')
+        #         shell(cmd)
+        if glob.glob('celseq2_job*.sh*'):
+            mkfolder(SUBDIR_QSUB)
+            shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
+
+        print_logger('UMI-count matrix is saved at {}'.format(input.csv))
+
+
+if RUN_CELSEQ2_TO_ST:
+    rule CELSEQ2_TO_ST:
+        input:
+            tsv = expand(join_path(DIR_PROJ, SUBDIR_ST, '{expid}', 'ST.tsv'),
+                         expid=list(set(sample_list))),
+        message: 'Convert to ST format.'
+        output:
+            touch('_done_ST')
+        run:
+            if glob.glob('celseq2_job*.sh*'):
+                mkfolder(SUBDIR_QSUB)
+                shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
+
+
+    rule _celseq2_to_st:
+        input:
+            hdf = join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+            flag = '_done_UMI',
+        output:
+            tsv = join_path(DIR_PROJ, SUBDIR_ST, '{expid}', 'ST.tsv'),
+        message: 'UMI-count matrix for ST: {output.tsv} '
+        params:
+            exclude_empty_spots = False,
+            exclude_nondetected_genes = False,
+        run:
+            cmd = 'celseq2-to-st {input.hdf} '
+            cmd += ' {} '.format(BC_INDEX_FPATH)
+            cmd += ' {output.tsv} '
+            if params.exclude_empty_spots:
+                cmd += ' --exclude-empty-spots '
+            if params.exclude_nondetected_genes:
+                cmd += ' --exclude-nondetected-genes '
+            shell(cmd)
+
+
+# rule REPORT_ALIGNMENT_LOG:
+#     input:
+#         report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
+#                                   'alignment_'+ALIGNER+'.csv'),
+#                         itemid=item_names),
+#     output:
+#         touch('_done_report')
+
+
+# Combo-demultiplexing
+rule combo_demultiplexing:
+    input: SAMPLE_TABLE_FPATH,
+    output:
+        fq = temp(dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ,
+                                    '{itemid}', '{bc}.fastq'))),
+    message: 'Performing combo-demultiplexing'
+    params:
+        jobs = len(item_names),
+        save_unknown_bc_fastq = SAVE_UNKNOWN_BC_FASTQ,
+    run:
+        # Demultiplx fastq in Process pool
+        p = Pool(params.jobs)
+        for itemid, itembc, itemr1, itemr2 in zip(item_names, bc_used, R1, R2):
+            itemid_in = join_path(DIR_PROJ, SUBDIR_INPUT, itemid)
+            mkfolder(itemid_in)
+            try:
+                os.symlink(itemr1, join_path(itemid_in, 'R1.fastq.gz'))
+                os.symlink(itemr2, join_path(itemid_in, 'R2.fastq.gz'))
+            except OSError:
+                pass
+            itemid_fqs_dir = join_path(DIR_PROJ, SUBDIR_FASTQ, itemid)
+
+            mkfolder(join_path(DIR_PROJ, SUBDIR_REPORT, itemid))
+            itemid_log = join_path(DIR_PROJ, SUBDIR_REPORT, itemid,
+                                   'demultiplexing.csv')
+            print_logger('Demultiplexing {}'.format(itemid))
+            cmd = " ".join(["bc_demultiplex",
+                            itemr1,
+                            itemr2,
+                            "--bc-index {}".format(BC_INDEX_FPATH),
+                            "--bc-seq-column {}".format(BC_SEQ_COLUMN),
+                            "--bc-index-used {}".format(itembc),
+                            "--min-bc-quality {}".format(FASTQ_QUAL_MIN_OF_BC),
+                            "--umi-start-position {}".format(
+                                UMI_START_POSITION),
+                            "--bc-start-position {}".format(BC_START_POSITION),
+                            "--umi-length {}".format(UMI_LENGTH),
+                            "--bc-length {}".format(BC_LENGTH),
+                            "--cut-length {}".format(CUT_LENGTH),
+                            "--out-dir  {}".format(itemid_fqs_dir),
+                            "--is-gzip ",
+                            "--stats-file {}".format(itemid_log)])
+            if params.save_unknown_bc_fastq:
+                cmd += ' --save-unknown-bc-fastq '
+
+            p.apply_async(shell, args=(cmd,))
+        p.close()
+        p.join()
+        shell('touch _done_combodemultiplex')
+
+
+rule TAG_FASTQ:
+    input:
+        fq = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ,
+                               '{itemid}', '{bc}.fastq'))
+    output:
+        expand(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', 'TAGGED.fastq'),
+               itemid=item_names)
+    run:
+        dict_itemid_fq = dict()
+        for fq in input.fq:
+            fq_itemid = base_name(dir_name(fq))
+            dict_itemid_fq.setdefault(fq_itemid, []).append(fq)
+        for itemid, item_fq in dict_itemid_fq.items():
+            itemid_tag_fq = join_path(DIR_PROJ, SUBDIR_FASTQ,
+                                      itemid, 'TAGGED.fastq')
+            cmd = 'cat {} > {} '.format(' '.join(item_fq), itemid_tag_fq)
+            shell(cmd)
+            print_logger('Tagged FQ: {}'.format(itemid_tag_fq))
+
+
+## Alignment ##
+rule ALIGNMENT:
+    input:
+        expand(join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemID}', ALIGNER+'.sam'),
+               itemID=item_names),
+    message: "Finished Alignment."
+
+if ALIGNER == 'bowtie2':
+    rule align_bowtie2:
+        input:
+            fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', 'TAGGED.fastq'),
+        output:
+            sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', ALIGNER+'.sam'),
+        params:
+            threads = num_threads
+        log:
+            join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
+                      'Align-Bowtie2.log')
+        run:
+            shell(
+                """
+                {BOWTIE2} \
+                -p {params.threads} \
+                -x {BOWTIE2_INDEX_PREFIX} \
+                -U {input.fq} \
+                -S {output.sam} 2>{log} \
+                --seed 42
+                """)
+
+if ALIGNER == 'star':
+    rule align_star:
+        input:
+            fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', 'TAGGED.fastq'),
+        output:
+            sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', ALIGNER+'.sam'),
+            log = join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
+                            'Align-STAR.log'),
+            starsam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '.star',
+                                'Aligned.out.sam'),
+            starlog = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '.star',
+                                'Log.final.out'),
+        params:
+            star_prefix = join_path(DIR_PROJ, SUBDIR_ALIGN,
+                                    '{itemid}', '.star', ''),
+            threads = num_threads,
+        run:
+            cmd = 'STAR '
+            cmd += ' --runRNGseed 42 '
+            cmd += ' --genomeLoad NoSharedMemory '
+            cmd += ' --runThreadN {params.threads} '
+            cmd += ' --genomeDir {STAR_INDEX_DIR} '
+            # cmd += ' --readFilesCommand zcat '
+            cmd += ' --readFilesIn {input.fq} '
+            cmd += ' --outFileNamePrefix {params.star_prefix} '
+            # cmd += ' --outSAMmultNmax 1 '
+            shell(cmd)
+            shell('ln -s {output.starsam} {output.sam} ')
+            shell('touch -h {output.sam} ')
+            shell('ln -s {output.starlog} {output.log} ')
+            shell('touch -h {output.log} ')
+
+
+rule combo_demultiplexing_sam:
+    input:
+        sam = expand(join_path(DIR_PROJ, SUBDIR_ALIGN,
+                               '{itemID}', ALIGNER+'.sam'),
+                     itemID = item_names),
+    output:
+        sam = temp(dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN,
+                                     '{itemID}', '{bcID}.sam1'))),
+    params:
+        jobs = len(item_names),
+    run:
+        p = Pool(params.jobs)
+        for item_sam in input.sam:
+            itemID = base_name(dir_name(item_sam))
+            demultiplex_itemID_dir = join_path(DIR_PROJ, SUBDIR_ALIGN, itemID)
+
+            cmd = 'sam-demultiplex '
+            cmd += ' --sbam {} '.format(item_sam)
+            cmd += ' --savetodir {} '.format(demultiplex_itemID_dir)
+            cmd += ' --bc-length {} '.format(BC_LENGTH)
+            p.apply_async(shell, args=(cmd,))
+        p.close()
+        p.join()
+        shell('touch _done_combodemultiplex_sam')
+
+
+## HT-seq Count UMI ##
+rule COOK_ANNOTATION:
+    input:
+        SAMPLE_TABLE_FPATH,
+    output:
+        anno_pkl = temp(join_path(DIR_PROJ, SUBDIR_ANNO,
+                                  base_name(GFF) + '.pickle')),
+        anno_csv = temp(join_path(DIR_PROJ, SUBDIR_ANNO,
+                                  base_name(GFF) + '.csv')),
+        # flag = '_done_annotation',
+    params:
+        gene_type = GENE_BIOTYPE
+    priority: 100
+    message: 'Cooking Annotation'
+    run:
+        from genometools.ensembl.annotations import get_genes
+
+        features, exported_genes = cook_anno_model(
+            GFF, feature_atrr=FEATURE_ID,
+            feature_type=FEATURE_CONTENT,
+            gene_types=[],  # defautl to all genes
+            stranded=True,
+            dumpto=None,  # manual export
+            verbose=verbose)
+
+        if params.gene_type:
+            print_logger('Types of reported gene: {}.'.format(
+                ', '.join(params.gene_type)))
+            gene_df = get_genes(GFF, valid_biotypes = set(params.gene_type))
+            exported_genes = sorted(gene_df['name'].values)
+            print_logger('Number of reported genes: {}.'.format(
+                len(exported_genes)))
+            gene_df.to_csv(output.anno_csv)
+        else:
+            shell('touch {output.anno_csv}')
+
+        with open(output.anno_pkl, 'wb') as fh:
+            pickle.dump( (features, exported_genes), fh)
+
+
+rule count_umi:
+    input:
+        gff = rules.COOK_ANNOTATION.output.anno_pkl,
+        sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemID}', '{bcID}.sam1'),
+    output:
+        umicnt = temp(join_path(DIR_PROJ, SUBDIR_UMI_CNT,
+                                '{itemID}', '{bcID}.pkl')),
+        umiset = temp(join_path(DIR_PROJ, SUBDIR_UMI_SET,
+                                '{itemID}', '{bcID}.pkl')),
+    message: 'Counting {input.sam}'
+    run:
+        features_f, _ = pickle.load(open(input.gff, 'rb'))
+        umi_cnt, umi_set, aln_cnt = count_umi(sam_fpath=input.sam,
+                                              features=features_f,
+                                              len_umi=UMI_LENGTH,
+                                              stranded=STRANDED,
+                                              accept_aln_qual_min=ALN_QUAL_MIN,
+                                              dumpto=None)
+        pickle.dump(umi_cnt, open(output.umicnt, 'wb'))
+        pickle.dump(umi_set, open(output.umiset, 'wb'))
+
+
+# - regular umi-count using *_umicnt.pkl -> umi_count_matrix replicates/lanes per plate
+rule summarize_umi_matrix_per_item:
+    input:
+        gff = rules.COOK_ANNOTATION.output.anno_pkl,
+        umicnt = dynamic(join_path(DIR_PROJ, SUBDIR_UMI_CNT,
+                                   '{itemID}', '{bcID}.pkl')),
+    output:
+        # Expression Matrix per item/pair-of-reads/lane per sample/plate
+        csv_item = expand(join_path(DIR_PROJ, SUBDIR_EXPR,
+                                    '{expid}', '{itemID}', 'expr.csv'), zip,
+                          expid=sample_list, itemID=item_names),
+        hdf_item = expand(join_path(DIR_PROJ, SUBDIR_EXPR,
+                                    '{expid}', '{itemID}', 'expr.h5'), zip,
+                          expid=sample_list, itemID=item_names),
+    run:
+        _, export_genes = pickle.load(open(input.gff, 'rb'))
+
+        # item -> dict(cell_bc -> Counter(umi_vector))
+        item_expr_matrix = defaultdict(dict)
+
+        for f in input.umicnt:
+            bc_name = base_name(f)  # BC-1-xxx
+            item_id = base_name(dir_name(f))  # item-1
+            item_expr_matrix[item_id][bc_name] = pickle.load(open(f, 'rb'))
+
+        for item_id, expr_dict in item_expr_matrix.items():
+            exp_id = SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']  # E1
+
+            for bc, cnt in expr_dict.items():
+                expr_dict[bc] = pd.Series([cnt[x] for x in export_genes],
+                                          index=export_genes)
+
+            expr_df = pd.DataFrame(expr_dict, index=export_genes).fillna(0)
+            expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
+                                     exp_id, item_id, 'expr.csv'))
+            expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
+                                     exp_id, item_id, 'expr.h5'), 'table')
+
+
+# - merge umi-count using *_umiset.pkl -> correct umi count per experiment/plate
+rule summarize_umi_matrix_per_experiment:
+    input:
+        # gff = join_path(DIR_PROJ, SUBDIR_ANNO,
+        #                 base_name(GFF) + '.pickle'),
+        gff = rules.COOK_ANNOTATION.output.anno_pkl,
+        umiset = dynamic(join_path(DIR_PROJ, SUBDIR_UMI_SET,
+                                   '{itemID}', '{bcID}.pkl')),
+    output:
+        # Expression Matrix per experiment/sample/plate
+        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+                     expid=list(set(sample_list))),
+        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+                     expid=list(set(sample_list))),
+    run:
+        _, export_genes = pickle.load(open(input.gff, 'rb'))
+
+        sample_list = SAMPLE_TABLE['SAMPLE_NAME'].values
+
+        # experiment_id -> dict(cell_bc -> dict(gname -> set(umi)))
+        exp_expr_matrix = {}
+
+        for exp_id in list(set(sample_list)):
+            exp_expr_matrix[exp_id] = defaultdict(dict)
+
+        for f in input.umiset:
+            bc_name = base_name(f)  # BC-1-xxx
+            item_id = base_name(dir_name(f))  # item-1
+            exp_id = SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']
+
+            umiset_stream = pickle.load(open(f, 'rb'))
+            if len(exp_expr_matrix[exp_id][bc_name]) == 0:
+                exp_expr_matrix[exp_id][bc_name] = umiset_stream
+                continue
+            umiset_cached = exp_expr_matrix[exp_id][bc_name]
+            for x in export_genes:
+                y1 = exp_expr_matrix[exp_id][bc_name].get(x, set())
+                y2 = umiset_stream.get(x, set())
+                exp_expr_matrix[exp_id][bc_name][x] = y1 | y2
+
+        for exp_id, expr_dict in exp_expr_matrix.items():
+            for bc, cnt in expr_dict.items():
+                cnt = _flatten_umi_set(cnt)
+                expr_dict[bc] = pd.Series([cnt[x] for x in export_genes],
+                                          index=export_genes)
+            expr_df = pd.DataFrame(expr_dict, index=export_genes).fillna(0)
+            expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
+                                     exp_id, 'expr.csv'))
+            expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
+                                     exp_id, 'expr.h5'), 'table')
+
+
+
+# rule report_alignment_log:
+#     input:
+#         df = dynamic(join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}', ALIGNER,
+#                                '{bc}.pickle')),
+#     output:
+#         report = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemid}',
+#                         'alignment_'+ALIGNER+'.csv'), itemid=item_names),
+
+#     run:
+#         for item in item_names:
+#             logs_per_item = []
+#             logs_name_item = []
+#             report_item = join_path(DIR_PROJ, SUBDIR_REPORT, item,
+#                                     'alignment_'+ALIGNER+'.csv')
+
+#             logs_fpath_item = [x for x in input.df if item in x]
+#             for log_fpath in logs_fpath_item:
+#                 log_df = pickle.load(open(log_fpath, 'rb'))
+#                 logs_per_item.append(log_df)
+
+#                 log_name = base_name(log_fpath)
+#                 logs_name_item.append(log_name)
+
+#             _ = merge_reports(reports=logs_per_item,
+#                               report_names=logs_name_item,
+#                               aligner_name=ALIGNER,
+#                               savetocsv=report_item)
+
+
+rule cleanall:
+    message: "Remove all files under {DIR_PROJ}"
+    run:
+        for d in SUBDIRS:
+            rmfolder(join_path(DIR_PROJ, d))
+        shell('rm -f _done_*')
+        shell('rm -f {}'.format(join_path(SUBDIR_QSUB, 'celseq2_job.*.sh.*')))
+
+
+rule clean_FQ_SAM:
+    input:
+        # Expression Matrix
+        csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+                     expid=list(set(sample_list))),
+        hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
+                     expid=list(set(sample_list))),
+    message: "Remove files under {DIR_PROJ} except expression results."
+    run:
+        for d in [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_INPUT]:
+            shell('rm -rf {}'.format(join_path(DIR_PROJ, d, '*')))
+        shell('rm -f _done_combodemultiplex')
+
+
+rule before_rerun_expr:
+    run:
+        for d in [SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_INPUT]:
+            shell('rm -rf {}'.format(join_path(DIR_PROJ, d, '*')))
+        shell('rm -f _done_combodemultiplex')
+        shell('rm -f {}'.format(join_path(SUBDIR_QSUB, 'celseq2_job.*.sh.*')))

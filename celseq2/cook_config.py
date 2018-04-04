@@ -77,7 +77,8 @@ def main_new_experiment_table():
 
 def get_workflow_file_string(mode='multiple'):
     if mode == 'multiple':
-        fname = 'celseq2.snakemake'
+        # fname = 'celseq2.snakemake'
+        fname = 'celseq2_beta.snakemake'
     else:
         fname = 'celseq2_single_lib.snakemake'
     fstring = resource_string('celseq2', 'workflow/{}'.format(fname))
@@ -86,7 +87,8 @@ def get_workflow_file_string(mode='multiple'):
 
 def get_workflow_file_fpath(mode='multiple'):
     if mode == 'multiple':
-        fname = 'celseq2.snakemake'
+        # fname = 'celseq2.snakemake'
+        fname = 'celseq2_beta.snakemake'
     else:
         fname = 'celseq2_single_lib.snakemake'
     fpath = resource_filename('celseq2', 'workflow/{}'.format(fname))
