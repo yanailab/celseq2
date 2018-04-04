@@ -160,16 +160,20 @@ rule COUNT_MATRIX:
         touch('_done_UMI')
     message: 'Finished counting UMI-count matrix.'
     run:
-        if ALIGNER == 'star':
-            shell('rm {}'.format('_done_star_genome_loaded'))
-            print('Free memory loaded by STAR', flush=True)
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                cmd = 'STAR '
-                cmd += '--genomeLoad Remove '
-                cmd += '--genomeDir {STAR_INDEX_DIR} '
-                cmd += '--outFileNamePrefix '
-                cmd += join_path(tmpdirname, '')
-                shell(cmd)
+        # if ALIGNER == 'star':
+        #     shell('rm {}'.format('_done_star_genome_loaded'))
+        #     print('Free memory loaded by STAR', flush=True)
+        #     with tempfile.TemporaryDirectory() as tmpdirname:
+        #         cmd = 'STAR '
+        #         cmd += '--genomeLoad Remove '
+        #         cmd += '--genomeDir {STAR_INDEX_DIR} '
+        #         cmd += '--outFileNamePrefix '
+        #         cmd += join_path(tmpdirname, '')
+        #         shell(cmd)
+        if glob.glob('celseq2_job*.sh*'):
+            mkfolder(SUBDIR_QSUB)
+            shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
+
         print_logger('UMI-count matrix is saved at {}'.format(input.csv))
 
 
@@ -181,6 +185,11 @@ if RUN_CELSEQ2_TO_ST:
         message: 'Convert to ST format.'
         output:
             touch('_done_ST')
+        run:
+            if glob.glob('celseq2_job*.sh*'):
+                mkfolder(SUBDIR_QSUB)
+                shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
+
 
     rule _celseq2_to_st:
         input:
@@ -304,21 +313,21 @@ if ALIGNER == 'bowtie2':
 
 
 if ALIGNER == 'star':
-    rule star_load_genome:
-        output:
-            flag = '_done_star_genome_loaded',
-        message: 'Loading genome to memory for STAR'
-        shadow: "shallow"
-        run:
-            cmd = 'STAR '
-            cmd += '--genomeLoad LoadAndExit '
-            cmd += '--genomeDir {STAR_INDEX_DIR} '
-            cmd += '&& echo loaded >>  {output.flag} '
-            shell(cmd)
+    # rule star_load_genome:
+    #     output:
+    #         flag = '_done_star_genome_loaded',
+    #     message: 'Loading genome to memory for STAR'
+    #     shadow: "shallow"
+    #     run:
+    #         cmd = 'STAR '
+    #         cmd += '--genomeLoad LoadAndExit '
+    #         cmd += '--genomeDir {STAR_INDEX_DIR} '
+    #         cmd += '&& echo loaded >>  {output.flag} '
+    #         shell(cmd)
 
     rule align_star:
         input:
-            flag = rules.star_load_genome.output.flag, #'_done_star_genome_loaded',
+            # flag = rules.star_load_genome.output.flag, #'_done_star_genome_loaded',
             fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', '{bc}.fastq'),
         output:
             sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '{bc}.sam'),
@@ -335,7 +344,7 @@ if ALIGNER == 'star':
         run:
             cmd = 'STAR '
             cmd += ' --runRNGseed 42 '
-            cmd += ' --genomeLoad LoadAndKeep '
+            cmd += ' --genomeLoad NoSharedMemory '
             cmd += ' --runThreadN {params.threads} '
             cmd += ' --genomeDir {STAR_INDEX_DIR} '
             # cmd += ' --readFilesCommand zcat '
