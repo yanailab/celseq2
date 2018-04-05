@@ -10,6 +10,34 @@
 
 ---
 
+## :fa-flag-checkered: **v0.5.1**
+
+:fa-calendar: **2018-04-05**
+
+:fa-star: **Features**
+
+- Get rid of the possible limitation about "shared memory" when STAR is used on
+  servers.
+- SpatialTranscriptomics (ST) processing is able to use STAR aligner practically.
+- Optionally remove intermediate files in a robust way.
+
+---
+
+## :fa-flag-checkered: **v0.4.8**
+
+:fa-calendar: **2018-03-26**
+
+:fa-star: **Features**
+
+- Robust selection on type of genes, e.g., protein coding, lincRNA.
+    - Handle the case when all genes are needed.
+    - The gene names are consistent to the in-house inDrop pipeline using
+      `genometools`.
+    - Handle the GTF/GFF where "gene_biotype" attribute is not available.
+- Automatically remove intermediate files by `snakemake`'s `temp()` function.
+
+---
+
 ## :fa-flag-checkered: **v0.4.7**
 
 :fa-calendar: **2018-03-23**
@@ -54,7 +82,8 @@
 :fa-star: **Features**
 
 - More general API to specify UMI-BC design.
-- Support [st_pipeline](https://github.com/SpatialTranscriptomicsResearch/st_pipeline).
+- Support
+  [st_pipeline](https://github.com/SpatialTranscriptomicsResearch/st_pipeline).
 
 ---
 
