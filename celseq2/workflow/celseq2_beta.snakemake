@@ -102,7 +102,7 @@ SUBDIR_EXPR = 'expr'
 SUBDIR_ST = 'ST'
 SUBDIR_LOG = '.small_log'
 SUBDIR_QSUB = 'qsub_log'
-SUBDIR_ANNO = '.annotation'
+SUBDIR_ANNO = 'annotation'
 SUBDIR_REPORT = 'report'
 
 SUBDIRS = [SUBDIR_INPUT,
@@ -139,7 +139,8 @@ if RUN_CELSEQ2_TO_ST:
                 mkfolder(SUBDIR_QSUB)
                 shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
             if not KEEP_INTERMEDIATE:
-                rmfolder(SUBDIR_FASTQ); rmfolder(SUBDIR_ANNO);
+                rmfolder(SUBDIR_FASTQ);
+                # rmfolder(SUBDIR_ANNO);
                 rmfolder(SUBDIR_ALIGN); rmfolder(SUBDIR_ALIGN_ITEM);
                 rmfolder(SUBDIR_LOG);
                 rmfolder(SUBDIR_UMI_CNT); rmfolder(SUBDIR_UMI_SET);
@@ -157,7 +158,8 @@ else:
                 mkfolder(SUBDIR_QSUB)
                 shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
             if not KEEP_INTERMEDIATE:
-                rmfolder(SUBDIR_FASTQ); rmfolder(SUBDIR_ANNO);
+                rmfolder(SUBDIR_FASTQ);
+                # rmfolder(SUBDIR_ANNO);
                 rmfolder(SUBDIR_ALIGN); rmfolder(SUBDIR_ALIGN_ITEM);
                 rmfolder(SUBDIR_LOG);
                 rmfolder(SUBDIR_UMI_CNT); rmfolder(SUBDIR_UMI_SET);
@@ -238,8 +240,8 @@ if RUN_CELSEQ2_TO_ST:
 rule combo_demultiplexing:
     input: SAMPLE_TABLE_FPATH,
     output:
-        fq = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ,
-                                    '{itemid}', '{bc}.fastq')),
+        fq = temp(dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ,
+                                    '{itemid}', '{bc}.fastq'))),
     message: 'Performing combo-demultiplexing'
     params:
         jobs = len(item_names),
@@ -412,8 +414,7 @@ rule COOK_ANNOTATION:
     output:
         anno_pkl = temp(join_path(DIR_PROJ, SUBDIR_ANNO,
                                   base_name(GFF) + '.pickle')),
-        anno_csv = temp(join_path(DIR_PROJ, SUBDIR_ANNO,
-                                  base_name(GFF) + '.csv')),
+        anno_csv = join_path(DIR_PROJ, SUBDIR_ANNO, base_name(GFF) + '.csv'),
         flag = '_done_annotation',
     params:
         gene_type = GENE_BIOTYPE
