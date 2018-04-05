@@ -71,6 +71,7 @@ num_threads = config.get('num_threads', 16)  # 5
 verbose = config.get('verbose', True)  # True
 
 RUN_CELSEQ2_TO_ST = config.get('run_celseq2_to_st', False)
+KEEP_INTERMEDIATE = config.get('keep_intermediate', False)
 
 #######################
 ## Pipeline reserved ##
@@ -94,21 +95,22 @@ if R1 is None or R2 is None:
 SUBDIR_INPUT = 'input'
 SUBDIR_FASTQ = '.small_fq'
 SUBDIR_ALIGN = '.small_sam'
+SUBDIR_ALIGN_ITEM = '.item_sam'
 SUBDIR_UMI_CNT = '.small_umi_count'
 SUBDIR_UMI_SET = '.small_umi_set'
 SUBDIR_EXPR = 'expr'
 SUBDIR_ST = 'ST'
 SUBDIR_LOG = '.small_log'
 SUBDIR_QSUB = 'qsub_log'
-SUBDIR_DIAG = '.small_diagnose'
 SUBDIR_ANNO = '.annotation'
 SUBDIR_REPORT = 'report'
 
 SUBDIRS = [SUBDIR_INPUT,
-           SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_UMI_CNT, SUBDIR_UMI_SET,
+           SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_ALIGN_ITEM,
+           SUBDIR_UMI_CNT, SUBDIR_UMI_SET,
            SUBDIR_EXPR,
            SUBDIR_REPORT,
-           SUBDIR_LOG, SUBDIR_QSUB, SUBDIR_DIAG, SUBDIR_ANNO
+           SUBDIR_LOG, SUBDIR_QSUB, SUBDIR_ANNO
            ]
 
 # aln_diagnose_item = ["_unmapped",
@@ -136,6 +138,12 @@ if RUN_CELSEQ2_TO_ST:
             if glob.glob('celseq2_job*.sh*'):
                 mkfolder(SUBDIR_QSUB)
                 shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
+            if not KEEP_INTERMEDIATE:
+                rmfolder(SUBDIR_FASTQ); rmfolder(SUBDIR_ANNO);
+                rmfolder(SUBDIR_ALIGN); rmfolder(SUBDIR_ALIGN_ITEM);
+                rmfolder(SUBDIR_LOG);
+                rmfolder(SUBDIR_UMI_CNT); rmfolder(SUBDIR_UMI_SET);
+
 else:
     rule all:
         input:
@@ -148,6 +156,11 @@ else:
             if glob.glob('celseq2_job*.sh*'):
                 mkfolder(SUBDIR_QSUB)
                 shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
+            if not KEEP_INTERMEDIATE:
+                rmfolder(SUBDIR_FASTQ); rmfolder(SUBDIR_ANNO);
+                rmfolder(SUBDIR_ALIGN); rmfolder(SUBDIR_ALIGN_ITEM);
+                rmfolder(SUBDIR_LOG);
+                rmfolder(SUBDIR_UMI_CNT); rmfolder(SUBDIR_UMI_SET);
 
 
 rule COUNT_MATRIX:
@@ -225,8 +238,8 @@ if RUN_CELSEQ2_TO_ST:
 rule combo_demultiplexing:
     input: SAMPLE_TABLE_FPATH,
     output:
-        fq = temp(dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ,
-                                    '{itemid}', '{bc}.fastq'))),
+        fq = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ,
+                                    '{itemid}', '{bc}.fastq')),
     message: 'Performing combo-demultiplexing'
     params:
         jobs = len(item_names),
@@ -272,14 +285,20 @@ rule combo_demultiplexing:
         p.join()
         shell('touch _done_combodemultiplex')
 
-
 rule TAG_FASTQ:
+    input:
+        expand(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemID}', 'TAGGED.bigfastq'),
+               itemID=item_names),
+    message: "Finished Tagging FASTQs."
+
+
+rule tag_fastq:
     input:
         fq = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ,
                                '{itemid}', '{bc}.fastq'))
     output:
-        expand(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', 'TAGGED.fastq'),
-               itemid=item_names)
+        expand(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemID}', 'TAGGED.bigfastq'),
+               itemID=item_names),
     run:
         dict_itemid_fq = dict()
         for fq in input.fq:
@@ -287,7 +306,7 @@ rule TAG_FASTQ:
             dict_itemid_fq.setdefault(fq_itemid, []).append(fq)
         for itemid, item_fq in dict_itemid_fq.items():
             itemid_tag_fq = join_path(DIR_PROJ, SUBDIR_FASTQ,
-                                      itemid, 'TAGGED.fastq')
+                                      itemid, 'TAGGED.bigfastq')
             cmd = 'cat {} > {} '.format(' '.join(item_fq), itemid_tag_fq)
             shell(cmd)
             print_logger('Tagged FQ: {}'.format(itemid_tag_fq))
@@ -296,20 +315,21 @@ rule TAG_FASTQ:
 ## Alignment ##
 rule ALIGNMENT:
     input:
-        expand(join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemID}', ALIGNER+'.sam'),
+        expand(join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM, '{itemID}', ALIGNER+'.bigsam'),
                itemID=item_names),
     message: "Finished Alignment."
 
 if ALIGNER == 'bowtie2':
     rule align_bowtie2:
         input:
-            fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', 'TAGGED.fastq'),
+            fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemID}', 'TAGGED.bigfastq'),
         output:
-            sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', ALIGNER+'.sam'),
+            sam = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
+                            '{itemID}', ALIGNER+'.bigsam'),
         params:
             threads = num_threads
         log:
-            join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
+            join_path(DIR_PROJ, SUBDIR_LOG, '{itemID}',
                       'Align-Bowtie2.log')
         run:
             shell(
@@ -325,20 +345,22 @@ if ALIGNER == 'bowtie2':
 if ALIGNER == 'star':
     rule align_star:
         input:
-            fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemid}', 'TAGGED.fastq'),
+            fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemID}', 'TAGGED.bigfastq'),
         output:
-            sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', ALIGNER+'.sam'),
-            log = join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}',
-                            'Align-STAR.log'),
-            starsam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '.star',
-                                'Aligned.out.sam'),
-            starlog = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemid}', '.star',
-                                'Log.final.out'),
+            sam = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
+                            '{itemID}', ALIGNER+'.bigsam'),
+            log = join_path(DIR_PROJ, SUBDIR_LOG,
+                            '{itemID}', 'Align-STAR.log'),
+            # starsam = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM, '{itemID}', '.star',
+            #                     'Aligned.out.sam'),
+            # starlog = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM, '{itemID}', '.star',
+            #                     'Log.final.out'),
         params:
-            star_prefix = join_path(DIR_PROJ, SUBDIR_ALIGN,
-                                    '{itemid}', '.star', ''),
+            star_prefix = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
+                                    '{itemID}', '.star', ''),
             threads = num_threads,
         run:
+            mkfolder(params.star_prefix)
             cmd = 'STAR '
             cmd += ' --runRNGseed 42 '
             cmd += ' --genomeLoad NoSharedMemory '
@@ -349,20 +371,21 @@ if ALIGNER == 'star':
             cmd += ' --outFileNamePrefix {params.star_prefix} '
             # cmd += ' --outSAMmultNmax 1 '
             shell(cmd)
-            shell('ln -s {output.starsam} {output.sam} ')
-            shell('touch -h {output.sam} ')
-            shell('ln -s {output.starlog} {output.log} ')
-            shell('touch -h {output.log} ')
+
+            starsam = join_path(params.star_prefix, 'Aligned.out.sam')
+            starlog = join_path(params.star_prefix, 'Log.final.out')
+
+            shell('mv {starsam} {output.sam} ')
+            shell('mv {starlog} {output.log} ')
 
 
 rule combo_demultiplexing_sam:
     input:
-        sam = expand(join_path(DIR_PROJ, SUBDIR_ALIGN,
-                               '{itemID}', ALIGNER+'.sam'),
+        sam = expand(join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
+                               '{itemID}', ALIGNER+'.bigsam'),
                      itemID = item_names),
     output:
-        sam = temp(dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN,
-                                     '{itemID}', '{bcID}.sam1'))),
+        sam = dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemID}', '{bcID}.sam')),
     params:
         jobs = len(item_names),
     run:
@@ -370,6 +393,7 @@ rule combo_demultiplexing_sam:
         for item_sam in input.sam:
             itemID = base_name(dir_name(item_sam))
             demultiplex_itemID_dir = join_path(DIR_PROJ, SUBDIR_ALIGN, itemID)
+            mkfolder(demultiplex_itemID_dir)
 
             cmd = 'sam-demultiplex '
             cmd += ' --sbam {} '.format(item_sam)
@@ -390,7 +414,7 @@ rule COOK_ANNOTATION:
                                   base_name(GFF) + '.pickle')),
         anno_csv = temp(join_path(DIR_PROJ, SUBDIR_ANNO,
                                   base_name(GFF) + '.csv')),
-        # flag = '_done_annotation',
+        flag = '_done_annotation',
     params:
         gene_type = GENE_BIOTYPE
     priority: 100
@@ -420,16 +444,18 @@ rule COOK_ANNOTATION:
         with open(output.anno_pkl, 'wb') as fh:
             pickle.dump( (features, exported_genes), fh)
 
+        shell('touch {output.flag} ')
+
 
 rule count_umi:
     input:
         gff = rules.COOK_ANNOTATION.output.anno_pkl,
-        sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemID}', '{bcID}.sam1'),
+        sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemID}', '{bcID}.sam'),
     output:
-        umicnt = temp(join_path(DIR_PROJ, SUBDIR_UMI_CNT,
-                                '{itemID}', '{bcID}.pkl')),
-        umiset = temp(join_path(DIR_PROJ, SUBDIR_UMI_SET,
-                                '{itemID}', '{bcID}.pkl')),
+        umicnt = join_path(DIR_PROJ, SUBDIR_UMI_CNT,
+                                '{itemID}', '{bcID}.pkl'),
+        umiset = join_path(DIR_PROJ, SUBDIR_UMI_SET,
+                                '{itemID}', '{bcID}.pkl'),
     message: 'Counting {input.sam}'
     run:
         features_f, _ = pickle.load(open(input.gff, 'rb'))

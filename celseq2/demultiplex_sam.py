@@ -26,7 +26,7 @@ def demultiplex_sam (samfile, outdir, bc_length):
         bc = _cell_seq(aln.query_name, length=bc_length)
         fh = dict_samout.get(bc, None)
         if not fh:
-            outsam = join_path(outdir, bc + '.sam1')
+            outsam = join_path(outdir, bc + '.sam')
             fh = pysam.AlignmentFile(outsam, 'w', template=samobj)
             dict_samout[bc] = fh
 
