@@ -41,8 +41,8 @@ def celseq2stpipeline(celseq2_fpath, spatial_map, out,
     fhout.write('{}\t{}\t{}\n'.format('Row', 'Col', '\t'.join(genes)))  # header
 
     for colname in colnames:
-        tmp = colname.replace('.', '-')
-        spot_seq = tmp.split('-')[-1]
+        tmp = colname.replace('.', '-') # BC-1-ATGC or ATGC
+        spot_seq = tmp.split('-')[-1] # ATGC or ATGC
         spot_expr = expr_valid[colname].values
         spot_xy = dict_spatial_seq2xy.get(spot_seq, None)
         if not spot_xy:
