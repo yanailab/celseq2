@@ -1,0 +1,782 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+        <meta name="description" content="User manual for celseq2, a Python framework for processing CEL-Seq2 data">
+      
+      
+        <link rel="canonical" href="https://yanailab.github.io/celseq2/about/performance/">
+      
+      
+        <meta name="author" content="Yun Yan">
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.pipeline.stopwords" content="True">
+      
+        <meta name="lang:search.pipeline.trimmer" content="True">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-0.17.2, mkdocs-material-2.6.0">
+    
+    
+      
+        <title>Performance - Manual for celseq2</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/application.aa3de92b.css">
+      
+        <link rel="stylesheet" href="../../assets/stylesheets/application-palette.792431c1.css">
+      
+    
+    
+      <script src="../../assets/javascripts/modernizr.1aa3b519.js"></script>
+    
+    
+      
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,400i,700|">
+        <style>body,input{font-family:"Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"","Courier New",Courier,monospace}</style>
+      
+      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    
+    
+    
+  </head>
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="deep-purple" data-md-color-accent="purple">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+          <svg xmlns="http://www.w3.org/2000/svg" width="416" height="448"
+    viewBox="0 0 416 448" id="github">
+  <path fill="currentColor" d="M160 304q0 10-3.125 20.5t-10.75 19-18.125
+        8.5-18.125-8.5-10.75-19-3.125-20.5 3.125-20.5 10.75-19 18.125-8.5
+        18.125 8.5 10.75 19 3.125 20.5zM320 304q0 10-3.125 20.5t-10.75
+        19-18.125 8.5-18.125-8.5-10.75-19-3.125-20.5 3.125-20.5 10.75-19
+        18.125-8.5 18.125 8.5 10.75 19 3.125 20.5zM360
+        304q0-30-17.25-51t-46.75-21q-10.25 0-48.75 5.25-17.75 2.75-39.25
+        2.75t-39.25-2.75q-38-5.25-48.75-5.25-29.5 0-46.75 21t-17.25 51q0 22 8
+        38.375t20.25 25.75 30.5 15 35 7.375 37.25 1.75h42q20.5 0
+        37.25-1.75t35-7.375 30.5-15 20.25-25.75 8-38.375zM416 260q0 51.75-15.25
+        82.75-9.5 19.25-26.375 33.25t-35.25 21.5-42.5 11.875-42.875 5.5-41.75
+        1.125q-19.5 0-35.5-0.75t-36.875-3.125-38.125-7.5-34.25-12.875-30.25-20.25-21.5-28.75q-15.5-30.75-15.5-82.75
+        0-59.25 34-99-6.75-20.5-6.75-42.5 0-29 12.75-54.5 27 0 47.5 9.875t47.25
+        30.875q36.75-8.75 77.25-8.75 37 0 70 8 26.25-20.5
+        46.75-30.25t47.25-9.75q12.75 25.5 12.75 54.5 0 21.75-6.75 42 34 40 34
+        99.5z" />
+</svg>
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="drawer">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="search">
+    <label class="md-overlay" data-md-component="overlay" for="drawer"></label>
+    
+      <a href="#performance" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a href="https://yanailab.github.io/celseq2/" title="Manual for celseq2" class="md-header-nav__button md-logo">
+          
+            <i class="md-icon">home</i>
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            
+              <span class="md-header-nav__topic">
+                Manual for celseq2
+              </span>
+              <span class="md-header-nav__topic">
+                Performance
+              </span>
+            
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          
+            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+            
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+          
+        
+      </div>
+      
+        <div class="md-flex__cell md-flex__cell--shrink">
+          <div class="md-header-nav__source">
+            
+
+
+  
+
+
+  <a href="https://github.com/yanailab/celseq2/" title="Go to repository" class="md-source" data-md-source="github">
+    
+      <div class="md-source__icon">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <use xlink:href="#github" width="24" height="24"></use>
+        </svg>
+      </div>
+    
+    <div class="md-source__repository">
+      yanailab/celseq2
+    </div>
+  </a>
+
+          </div>
+        </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      
+      <main class="md-main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="drawer">
+    <span class="md-nav__button md-logo">
+      
+        <i class="md-icon">home</i>
+      
+    </span>
+    Manual for celseq2
+  </label>
+  
+    <div class="md-nav__source">
+      
+
+
+  
+
+
+  <a href="https://github.com/yanailab/celseq2/" title="Go to repository" class="md-source" data-md-source="github">
+    
+      <div class="md-source__icon">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <use xlink:href="#github" width="24" height="24"></use>
+        </svg>
+      </div>
+    
+    <div class="md-source__repository">
+      yanailab/celseq2
+    </div>
+  </a>
+
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." title="Home" class="md-nav__link">
+      Home
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-2" type="checkbox" id="nav-2">
+    
+    <label class="md-nav__link" for="nav-2">
+      User Guide
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-2">
+        User Guide
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../user_guide/setup_config/" title="Setup configuration" class="md-nav__link">
+      Setup configuration
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../user_guide/experiment_table/" title="Specify experiment table" class="md-nav__link">
+      Specify experiment table
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../user_guide/launch_pipeline/" title="Launch pipeline" class="md-nav__link">
+      Launch pipeline
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../user_guide/storage/" title="Storage management" class="md-nav__link">
+      Storage management
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
+    
+    <label class="md-nav__link" for="nav-3">
+      About
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        About
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../reproducibility/" title="Reproducibility" class="md-nav__link">
+      Reproducibility
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../user_friendly/" title="User experience" class="md-nav__link">
+      User experience
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="toc">
+        Performance
+      </label>
+    
+    <a href="./" title="Performance" class="md-nav__link md-nav__link--active">
+      Performance
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" title="Introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-compare" title="How to compare" class="md-nav__link">
+    How to compare
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-of-runtimes-in-serial-mode" title="Comparison of runtimes in serial mode" class="md-nav__link">
+    Comparison of runtimes in serial mode
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-of-runtimes-in-parallel-mode" title="Comparison of runtimes in parallel mode" class="md-nav__link">
+    Comparison of runtimes in parallel mode
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" title="Summary" class="md-nav__link">
+    Summary
+  </a>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../support_others/" title="Support other methods" class="md-nav__link">
+      Support other methods
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../release_note/" title="Release note" class="md-nav__link">
+      Release note
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../LICENSE/" title="License" class="md-nav__link">
+      License
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../faq/" title="FAQ" class="md-nav__link">
+      FAQ
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" title="Introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-compare" title="How to compare" class="md-nav__link">
+    How to compare
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-of-runtimes-in-serial-mode" title="Comparison of runtimes in serial mode" class="md-nav__link">
+    Comparison of runtimes in serial mode
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-of-runtimes-in-parallel-mode" title="Comparison of runtimes in parallel mode" class="md-nav__link">
+    Comparison of runtimes in parallel mode
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" title="Summary" class="md-nav__link">
+    Summary
+  </a>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/yanailab/celseq2/edit/master/docs/about/performance.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                
+                
+                <h1 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h1>
+<p>We believe data digestion should be automated, and it should be done in a
+very, very computational efficient manner <img alt="🚀" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/1f680.svg" title=":rocket:" />.</p>
+<hr />
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
+<p>As the first generation, <code>CEL-Seq-pipeline</code> provided a stable and efficient
+service to process CEL-Seq and CEL-Seq2 data. Improving computational
+efficiency even on top of that was challenging to ourselves. However, we spared
+not effort to challenge the status quo.</p>
+<p>Generally speaking, there are two different ways to improve the runtime of a
+pipeline:</p>
+<ol>
+<li><i class="fa fa-laptop"></i> Provide more computational resources (e.g., CPU cores or nodes in
+a cluster) thus allow more parallelized tasks running in the same time.</li>
+<li><i class="fa fa-gear"></i> Optimize the codes of each pipeline step in order to make it more
+   computationally efficient.</li>
+</ol>
+<p><code>celseq2</code> features in a new design of work flow with optimized codes written in
+Python 3 which leads to boosted computational efficiency, and furthermore brings
+flexibility to request computational resources from either local computer or
+servers.</p>
+<h2 id="how-to-compare">How to compare<a class="headerlink" href="#how-to-compare" title="Permanent link">&para;</a></h2>
+<p>Here were two comparisons.</p>
+<ol>
+<li>In order to demonstrate the efficiency boosted by the optimized codes alone,
+<code>celseq2</code> and <code>CEL-Seq-pipeline</code> ran on the same <em>one</em> set of CEL-Seq2 data in
+<em>serial</em> mode.</li>
+<li>In order to quantify the difference of performance in real case where
+parallelization is often allowed, <code>celseq2</code> and <code>CEL-Seq-pipeline</code> ran on same
+<em>two</em> sets of CEL-Seq2 data in <em>parallel</em> mode.</li>
+</ol>
+<p>The example one set of CEL-Seq2 data consisted of ~40 million read pairs.</p>
+<h2 id="comparison-of-runtimes-in-serial-mode">Comparison of runtimes in serial mode<a class="headerlink" href="#comparison-of-runtimes-in-serial-mode" title="Permanent link">&para;</a></h2>
+<p><img alt="single" src="https://i.imgur.com/68DzbN0.jpg" /></p>
+<p>Each run in <em>serial</em> mode was performed three times independently to account for
+the fluctuation of run-time.</p>
+<!-- <img src='../img/efficiency_NonParralel_SingleLib.png' width=600> -->
+
+<p><img alt="" src="../../img/efficiency_NonParralel_SingleLib.png" /></p>
+<p><img alt="✅" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/2705.svg" title=":white_check_mark:" /> Each step of the work flow was accelerated by <code>celseq2</code>,
+compared to <code>CEL-Seq-pipeline</code>, solely due to the new design with code
+optimization.</p>
+<ol>
+<li>Demultiplexing reached <strong>3-fold</strong> speed.</li>
+<li>Counting UMIs reached  <strong>4-fold</strong> speed.</li>
+<li>Overall reached <strong>2-fold</strong> speed.</li>
+</ol>
+<p><img alt="‼️" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/203c.svg" title=":bangbang:" /> In this comparison <code>CEL-Seq-pipeline</code> had an unfair advantage because
+    it internally used 15 threads for parallelizing alignment with <code>bowtie2</code> ,
+    while the new pipeline stringently used only one thread. Therefore, <code>celseq2</code>
+    spent more time than <code>CEL-Seq-pipeline</code> in this example.</p>
+<p><img alt="✅" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/2705.svg" title=":white_check_mark:" /> Nevertheless, <code>celseq2</code> achieved an overall speed of more than
+<strong>2-fold</strong> compared to <code>CEL-Seq-pipeline</code>.</p>
+<h2 id="comparison-of-runtimes-in-parallel-mode">Comparison of runtimes in parallel mode<a class="headerlink" href="#comparison-of-runtimes-in-parallel-mode" title="Permanent link">&para;</a></h2>
+<p><img alt="multi" src="https://i.imgur.com/Gxho5Qk.jpg" /></p>
+<p>In practice, users usually have multiple CPU or cores available, and
+pipelines can take advantage of this fact by splitting up data into smaller
+chunks and processing them in parallel, and/or by running individual processes
+(e.g., alignment) using multiple threads.</p>
+<p>Here the second comparison aimed to quantify the performance of the two pipelines
+in a more realistic scenario by running them on a 32-core server in <em>parallel</em>
+mode <sup id="fnref:how-parallel"><a class="footnote-ref" href="#fn:how-parallel" rel="footnote">1</a></sup>, and testing them on a dataset that consisted of two sets
+of CEL-Seq2 data <sup id="fnref:dup-data"><a class="footnote-ref" href="#fn:dup-data" rel="footnote">2</a></sup> which totally consisted ~80 million read pairs.</p>
+<!-- <img src='../img/efficiency_Parallel_2Libs.png' width=600> -->
+
+<p><img alt="" src="../../img/efficiency_Parallel_2Libs.png" /></p>
+<p><img alt="✅" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/2705.svg" title=":white_check_mark:" /> Each step of the work flow was accelerated by <code>celseq2</code>,
+compared to <code>CEL-Seq-pipeline</code>.</p>
+<ol>
+<li>Demultiplexing reached <strong>9-fold</strong> speed.</li>
+<li>Counting UMIs reached  <strong>4-fold</strong> speed <sup id="fnref2:umi"><a class="footnote-ref" href="#fn:umi" rel="footnote">3</a></sup>.</li>
+<li>Overall reached <strong>3.5-fold</strong> speed.</li>
+</ol>
+<p><img alt="‼️" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/203c.svg" title=":bangbang:" /> In this comparison <code>CEL-Seq-pipeline</code> again had an unfair advantage,
+    because the computational resources was as twice as what <code>celseq2</code> used for
+    UMI counting. Internally <code>CEL-Seq-pipeline</code> launched a fixed number parallel
+    jobs which was 50, instead of 30 <sup id="fnref:umi"><a class="footnote-ref" href="#fn:umi" rel="footnote">3</a></sup>.</p>
+<p><img alt="✅" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/2705.svg" title=":white_check_mark:" /> Nevertheless, <code>celseq2</code> achieved a more than <strong>3.5-fold</strong>
+    speed compared to <code>CEL-Seq-pipeline</code>. In particular, the new design of work
+    flow of <code>celseq2</code> parallelized the demultiplexing step.</p>
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Compared to <code>CEL-Seq-pipeline</code>, <code>celseq2</code> achieved the following speed:<ul>
+<li>Demultiplexing: ~4N-fold, where N is the number of sets of CEL-Seq2 data.</li>
+<li>Alignment: roughly same as expected since no optimization was involved.</li>
+<li>Counting UMIs: ~4-fold.</li>
+</ul>
+</li>
+<li>In real case, the absolute runtime that took<code>celseq2</code> to finish ~80 million
+read pairs was about 40 minutes <sup id="fnref:time-consumed"><a class="footnote-ref" href="#fn:time-consumed" rel="footnote">4</a></sup> in this example.</li>
+</ol>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:how-parallel">
+<p>The syntax to run pipelines in parallel mode was
+different. <code>CEL-Seq-pipeline</code> set <code>proc=30</code> in its configuration file. And
+<code>celseq2</code> requested 30 cores at most simply by setting <code>-j 30</code>.&#160;<a class="footnote-backref" href="#fnref:how-parallel" rev="footnote" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:dup-data">
+<p>For the record, the two sets CEL-Seq2 data were indeed two copies
+ of the same one set of data.&#160;<a class="footnote-backref" href="#fnref:dup-data" rev="footnote" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:umi">
+<p>It turned out that <code>proc</code> parameter of <code>CEL-Seq-pipeline</code> was not used
+when counting UMIs, but instead internally <code>CEL-Seq-pipeline</code> launched a fixed
+number parallel jobs which was always 50. See
+<a href="https://github.com/yanailab/CEL-Seq-
+pipeline/blob/133912cd4ceb20af0c67627ab883dfce8b9668df/htseq_wrapper.py#L60">line-60</a> and
+<a href="https://github.com/yanailab/CEL-Seq-
+pipeline/blob/133912cd4ceb20af0c67627ab883dfce8b9668df/htseq_wrapper.py#L81">line-81</a> in
+source code. In this example, they were supposed to request same 30 cores so
+<code>CEL-Seq-pipeline</code> had roughly twice number of jobs running for counting
+UMIs compared to <code>celseq2</code>.&#160;<a class="footnote-backref" href="#fnref:umi" rev="footnote" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:umi" rev="footnote" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:time-consumed">
+<p>The absolute time varies among data sets. For example, it will
+take less time if less proportional reads were qualified though same total number
+of read pairs (e.g., 40 million).&#160;<a class="footnote-backref" href="#fnref:time-consumed" rev="footnote" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+                
+                  
+                
+              
+              
+                
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../user_friendly/" title="User experience" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                User experience
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../support_others/" title="Support other methods" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Support other methods
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Copyright &copy 2017 New York University
+          </div>
+        
+        powered by
+        <a href="http://www.mkdocs.org">MkDocs</a>
+        and
+        <a href="https://squidfunk.github.io/mkdocs-material/">
+          Material for MkDocs</a>
+      </div>
+      
+        
+  <div class="md-footer-social">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+      <a href="https://github.com/yanailab" class="md-footer-social__link fa fa-github"></a>
+    
+      <a href="https://yanailab.org" class="md-footer-social__link fa fa-link"></a>
+    
+  </div>
+
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/application.9fb73e57.js"></script>
+      
+      <script>app.initialize({version:"0.17.2",url:{base:"../.."}})</script>
+      
+    
+    
+      
+    
+  </body>
+</html>

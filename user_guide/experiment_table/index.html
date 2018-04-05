@@ -1,0 +1,944 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+        <meta name="description" content="User manual for celseq2, a Python framework for processing CEL-Seq2 data">
+      
+      
+        <link rel="canonical" href="https://yanailab.github.io/celseq2/user_guide/experiment_table/">
+      
+      
+        <meta name="author" content="Yun Yan">
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.pipeline.stopwords" content="True">
+      
+        <meta name="lang:search.pipeline.trimmer" content="True">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-0.17.2, mkdocs-material-2.6.0">
+    
+    
+      
+        <title>Specify experiment table - Manual for celseq2</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/application.aa3de92b.css">
+      
+        <link rel="stylesheet" href="../../assets/stylesheets/application-palette.792431c1.css">
+      
+    
+    
+      <script src="../../assets/javascripts/modernizr.1aa3b519.js"></script>
+    
+    
+      
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,400i,700|">
+        <style>body,input{font-family:"Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"","Courier New",Courier,monospace}</style>
+      
+      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    
+    
+    
+  </head>
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="deep-purple" data-md-color-accent="purple">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+          <svg xmlns="http://www.w3.org/2000/svg" width="416" height="448"
+    viewBox="0 0 416 448" id="github">
+  <path fill="currentColor" d="M160 304q0 10-3.125 20.5t-10.75 19-18.125
+        8.5-18.125-8.5-10.75-19-3.125-20.5 3.125-20.5 10.75-19 18.125-8.5
+        18.125 8.5 10.75 19 3.125 20.5zM320 304q0 10-3.125 20.5t-10.75
+        19-18.125 8.5-18.125-8.5-10.75-19-3.125-20.5 3.125-20.5 10.75-19
+        18.125-8.5 18.125 8.5 10.75 19 3.125 20.5zM360
+        304q0-30-17.25-51t-46.75-21q-10.25 0-48.75 5.25-17.75 2.75-39.25
+        2.75t-39.25-2.75q-38-5.25-48.75-5.25-29.5 0-46.75 21t-17.25 51q0 22 8
+        38.375t20.25 25.75 30.5 15 35 7.375 37.25 1.75h42q20.5 0
+        37.25-1.75t35-7.375 30.5-15 20.25-25.75 8-38.375zM416 260q0 51.75-15.25
+        82.75-9.5 19.25-26.375 33.25t-35.25 21.5-42.5 11.875-42.875 5.5-41.75
+        1.125q-19.5 0-35.5-0.75t-36.875-3.125-38.125-7.5-34.25-12.875-30.25-20.25-21.5-28.75q-15.5-30.75-15.5-82.75
+        0-59.25 34-99-6.75-20.5-6.75-42.5 0-29 12.75-54.5 27 0 47.5 9.875t47.25
+        30.875q36.75-8.75 77.25-8.75 37 0 70 8 26.25-20.5
+        46.75-30.25t47.25-9.75q12.75 25.5 12.75 54.5 0 21.75-6.75 42 34 40 34
+        99.5z" />
+</svg>
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="drawer">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="search">
+    <label class="md-overlay" data-md-component="overlay" for="drawer"></label>
+    
+      <a href="#experiment-table" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a href="https://yanailab.github.io/celseq2/" title="Manual for celseq2" class="md-header-nav__button md-logo">
+          
+            <i class="md-icon">home</i>
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            
+              <span class="md-header-nav__topic">
+                Manual for celseq2
+              </span>
+              <span class="md-header-nav__topic">
+                Specify experiment table
+              </span>
+            
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          
+            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+            
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+          
+        
+      </div>
+      
+        <div class="md-flex__cell md-flex__cell--shrink">
+          <div class="md-header-nav__source">
+            
+
+
+  
+
+
+  <a href="https://github.com/yanailab/celseq2/" title="Go to repository" class="md-source" data-md-source="github">
+    
+      <div class="md-source__icon">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <use xlink:href="#github" width="24" height="24"></use>
+        </svg>
+      </div>
+    
+    <div class="md-source__repository">
+      yanailab/celseq2
+    </div>
+  </a>
+
+          </div>
+        </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      
+      <main class="md-main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="drawer">
+    <span class="md-nav__button md-logo">
+      
+        <i class="md-icon">home</i>
+      
+    </span>
+    Manual for celseq2
+  </label>
+  
+    <div class="md-nav__source">
+      
+
+
+  
+
+
+  <a href="https://github.com/yanailab/celseq2/" title="Go to repository" class="md-source" data-md-source="github">
+    
+      <div class="md-source__icon">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <use xlink:href="#github" width="24" height="24"></use>
+        </svg>
+      </div>
+    
+    <div class="md-source__repository">
+      yanailab/celseq2
+    </div>
+  </a>
+
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." title="Home" class="md-nav__link">
+      Home
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-2" type="checkbox" id="nav-2" checked>
+    
+    <label class="md-nav__link" for="nav-2">
+      User Guide
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-2">
+        User Guide
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../setup_config/" title="Setup configuration" class="md-nav__link">
+      Setup configuration
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="toc">
+        Specify experiment table
+      </label>
+    
+    <a href="./" title="Specify experiment table" class="md-nav__link md-nav__link--active">
+      Specify experiment table
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-experiment-table" title="Why experiment table" class="md-nav__link">
+    Why experiment table
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-an-experiment-table-from-template" title="Create an experiment table from template" class="md-nav__link">
+    Create an experiment table from template
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-specify-experiment-table" title="How to specify experiment table" class="md-nav__link">
+    How to specify experiment table
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-0" title="Example 0" class="md-nav__link">
+    Example 0
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-1" title="Example 1" class="md-nav__link">
+    Example 1
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2" title="Example 2" class="md-nav__link">
+    Example 2
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../launch_pipeline/" title="Launch pipeline" class="md-nav__link">
+      Launch pipeline
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../storage/" title="Storage management" class="md-nav__link">
+      Storage management
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+    
+    <label class="md-nav__link" for="nav-3">
+      About
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        About
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../about/reproducibility/" title="Reproducibility" class="md-nav__link">
+      Reproducibility
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../about/user_friendly/" title="User experience" class="md-nav__link">
+      User experience
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../about/performance/" title="Performance" class="md-nav__link">
+      Performance
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../about/support_others/" title="Support other methods" class="md-nav__link">
+      Support other methods
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../about/release_note/" title="Release note" class="md-nav__link">
+      Release note
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../about/LICENSE/" title="License" class="md-nav__link">
+      License
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../faq/" title="FAQ" class="md-nav__link">
+      FAQ
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-experiment-table" title="Why experiment table" class="md-nav__link">
+    Why experiment table
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-an-experiment-table-from-template" title="Create an experiment table from template" class="md-nav__link">
+    Create an experiment table from template
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-specify-experiment-table" title="How to specify experiment table" class="md-nav__link">
+    How to specify experiment table
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-0" title="Example 0" class="md-nav__link">
+    Example 0
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-1" title="Example 1" class="md-nav__link">
+    Example 1
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2" title="Example 2" class="md-nav__link">
+    Example 2
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/yanailab/celseq2/edit/master/docs/user_guide/experiment_table.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                
+                
+                <h1 id="experiment-table">Experiment Table<a class="headerlink" href="#experiment-table" title="Permanent link">&para;</a></h1>
+<p>Learn how to translate any experiment design to <code>celseq2</code> in an easy way.</p>
+<hr />
+<h2 id="why-experiment-table">Why experiment table<a class="headerlink" href="#why-experiment-table" title="Permanent link">&para;</a></h2>
+<p>Experiment table has 3 purposes:</p>
+<ol>
+<li>Specify the absolute paths of input CEL-Seq2 data.</li>
+<li>Translate the overall design of experiments to format that <code>celseq2</code> can
+   understand, so that <code>celseq2</code> can generate the expected layout of UMI-count
+   matrix.</li>
+<li>Provide an user-friendly way to finish the two above goals.</li>
+</ol>
+<p>Experiment table is in particular convenient for complexed experiment design
+   where more than one experiment conditions with (or without)
+   biological/technical replicates present.</p>
+<h2 id="create-an-experiment-table-from-template">Create an experiment table from template<a class="headerlink" href="#create-an-experiment-table-from-template" title="Permanent link">&para;</a></h2>
+<p><code>celseq2</code> provides a bash command <code>new-experiment-table</code> to initiate
+a new experiment table.</p>
+<div class="codehilite"><pre><span></span>new-experiment-table -o /path/to/wonderful_experiment_table.txt
+</pre></div>
+
+
+<p>It is space/tab separated text file. Modify it and fill in details.</p>
+<div class="codehilite"><pre><span></span>SAMPLE_NAME CELL_BARCODES_INDEX R1  R2
+wonderful_experiment1   1,8,2-7 path/to/x-1-r1.fastq.gz path/to/x-1-r2.fastq.gz
+wonderful_experiment1   1-8 path/to/x-3-r1.fastq.gz path/to/x-3-r2.fastq.gz
+wonderful_experiment2   95-96,1-94,10   path/to/y-2-r1.fastq.gz path/to/y-2-r2.fastq.gz
+wonderful_experiment2   1-96    path/to/y-5-r1.fastq.gz path/to/y-5-r2.fastq.gz
+</pre></div>
+
+
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<ul>
+<li>Header names (<code>SAMPLE_NAME</code>, <code>CELL_BARCODES_INDEX</code>, <code>R1</code>, <code>R2</code>) are NOT
+  allowed to be modified or deleted.</li>
+<li>Each slot cannot contain spaces.</li>
+</ul>
+</div>
+<h2 id="how-to-specify-experiment-table">How to specify experiment table<a class="headerlink" href="#how-to-specify-experiment-table" title="Permanent link">&para;</a></h2>
+<p>User can get familiar with how to specify experiment table by walking through the
+following three examples.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>When specify each row of experiment table, keep a formula in mind:</p>
+<p>For input reads file <em>X</em>, claim that cells with barcode indexes from <em>i</em>
+to <em>j</em> come from experiment <em>Y</em>.</p>
+</div>
+<h3 id="example-0">Example 0<a class="headerlink" href="#example-0" title="Permanent link">&para;</a></h3>
+<p>In Example-0, users will learn how to translate a experiment design to a
+experiment table that <code>celseq2</code> can understand.</p>
+<p><img alt='experiment_2plates_1lane' src='http://i.imgur.com/Vi2cD6e.png' width=400>
+<!-- <img alt="experiment_2plates_1lane" src="http://i.imgur.com/Vi2cD6e.png" /> --></p>
+<p>As shown in above diagram, this is how the experiment on wet lab side is
+performed. There are two groups of cells from experiment-1 and experiment-2,
+which are colored by blue and orange, respectively. Experiment-1 (blue) has 8
+cells while experiment-2 (orange) has 96 cells.</p>
+<p>User wants to quantify the two groups separately yet have them sequenced
+together. Here is a possible experiment design. First, during CEL-Seq2
+experiment, the 8 cells of experiment-1 are labeled with cell barcodes indexed
+from 1 to 8 of cell barcodes <a href="../setup_config/#bc_index_fpath">dictionary</a>, while
+the 96 cells of experiment-2 are labeled with barcodes indexed from 1 to 96.
+Second, the two groups of cells are further labeled with different Illumina
+sequencing barcodes (denoted as blue and orange circles) and finally are
+sequenced in the same one lane (colored in green) of sequencer. As a result, user
+has two sets of CEL-Seq2 FASTQ reads.</p>
+<p>The goal of experiment table is make <code>celseq2</code> be aware of where to find the two
+sets of reads, and more importantly understand the entire experiment design, so
+that <code>celseq2</code> finally generates two UMI-count matrix for the two experiments.</p>
+<p>This is the example content of experiment table that user should prepare in this
+case study.</p>
+<table>
+<thead>
+<tr>
+<th>SAMPLE_NAME</th>
+<th>CELL_BARCODES_INDEX</th>
+<th>R1</th>
+<th>R2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>experiment1 <img alt="🔷" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/1f537.svg" title=":large_blue_diamond:" /></td>
+<td>1-8</td>
+<td>path/to/sampleX-lane2-R1.fastq.gz   <img alt="1️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0031-20e3.svg" title=":one:" /></td>
+<td>path/to/sampleX-lane2-R2.fastq.gz   <img alt="1️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0031-20e3.svg" title=":one:" /></td>
+</tr>
+<tr>
+<td>experiment2 <img alt="🔶" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/1f536.svg" title=":large_orange_diamond:" /></td>
+<td>1-96</td>
+<td>path/to/sampleY-lane2-R1.fastq.gz   <img alt="2️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0032-20e3.svg" title=":two:" /></td>
+<td>path/to/sampleY-lane2-R2.fastq.gz   <img alt="2️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0032-20e3.svg" title=":two:" /></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>It is free to <em>claim</em> less or more cells in <code>CELL_BARCODES_INDEX</code> column.
+Users do not have to claim the exact cells that are truly present in
+experiment. For instance, <code>20-96</code>, instead of <code>1-96</code>, could be claimed in the
+above experiment-2, if it were believed that cells <code>1-19</code> are not in good
+shape during cell preparation and should be ignored.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p><code>celseq2</code> understands the most human ways to specify cell barcode index. For
+example, all the following formats are equivalent to <code>1-8</code>:</p>
+<ul>
+<li><code>8-1</code>: reversed range</li>
+<li><code>1,2,3,4-8</code>: individual + range</li>
+<li><code>8,1,7-2,3-6</code>: redundancy is tolerant</li>
+</ul>
+</div>
+<h3 id="example-1">Example 1<a class="headerlink" href="#example-1" title="Permanent link">&para;</a></h3>
+<p>Example-1 is conceived on top of <a href="#example-0">Example-0</a>. Here users will know
+about how <em>replicates</em> are specified to <code>celseq2</code>.</p>
+<p>The experiment flow is same, except that the two groups are mixed together first
+and then get sequenced in three lanes instead of one lane. Therefore, user has
+six sets of CEL-Seq2 FASTQ reads.</p>
+<p><img alt='multiple-lane' src='http://i.imgur.com/dwowlHb.png' width=400></p>
+<!-- ![multiple-lane](http://i.imgur.com/dwowlHb.png) -->
+
+<p>The example content of experiment table in this case study is:</p>
+<table>
+<thead>
+<tr>
+<th>SAMPLE_NAME</th>
+<th>CELL_BARCODES_INDEX</th>
+<th>R1</th>
+<th>R2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>experiment1 <img alt="🔷" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/1f537.svg" title=":large_blue_diamond:" /></td>
+<td>1,8,2-7</td>
+<td>path/to/x-1-r1.fastq.gz <img alt="1️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0031-20e3.svg" title=":one:" /></td>
+<td>path/to/x-1-r2.fastq.gz <img alt="1️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0031-20e3.svg" title=":one:" /></td>
+</tr>
+<tr>
+<td>experiment1 <img alt="🔷" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/1f537.svg" title=":large_blue_diamond:" /></td>
+<td>8,7,6,5,4,3,2,1</td>
+<td>path/to/x-2-r1.fastq.gz <img alt="2️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0032-20e3.svg" title=":two:" /></td>
+<td>path/to/x-2-r2.fastq.gz <img alt="2️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0032-20e3.svg" title=":two:" /></td>
+</tr>
+<tr>
+<td>experiment1 <img alt="🔷" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/1f537.svg" title=":large_blue_diamond:" /></td>
+<td>1-8</td>
+<td>path/to/x-3-r1.fastq.gz <img alt="3️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0033-20e3.svg" title=":three:" /></td>
+<td>path/to/x-3-r2.fastq.gz <img alt="3️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0033-20e3.svg" title=":three:" /></td>
+</tr>
+<tr>
+<td>experiment2 <img alt="🔶" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/1f536.svg" title=":large_orange_diamond:" /></td>
+<td>1-96</td>
+<td>path/to/y-1-r1.fastq.gz   <img alt="4️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0034-20e3.svg" title=":four:" /></td>
+<td>path/to/y-2-r2.fastq.gz   <img alt="4️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0034-20e3.svg" title=":four:" /></td>
+</tr>
+<tr>
+<td>experiment2 <img alt="🔶" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/1f536.svg" title=":large_orange_diamond:" /></td>
+<td>95-96,94-1,10</td>
+<td>path/to/y-2-r1.fastq.gz   <img alt="5️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0035-20e3.svg" title=":five:" /></td>
+<td>path/to/y-2-r2.fastq.gz   <img alt="5️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0035-20e3.svg" title=":five:" /></td>
+</tr>
+<tr>
+<td>experiment2 <img alt="🔶" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/1f536.svg" title=":large_orange_diamond:" /></td>
+<td>1-96</td>
+<td>path/to/y-3-r1.fastq.gz   <img alt="6️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0036-20e3.svg" title=":six:" /></td>
+<td>path/to/y-3-r2.fastq.gz   <img alt="6️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0036-20e3.svg" title=":six:" /></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>The idea of "lane" in this case study could be adapted to any type of
+biological / technical replicates.</p>
+</div>
+<h3 id="example-2">Example 2<a class="headerlink" href="#example-2" title="Permanent link">&para;</a></h3>
+<p>Example-2 is closer to a real experiment with complexed design to handle possible
+batch effect. However, user will still find it pretty easy to define the
+experiment table.</p>
+<p><img alt='batch_effect' src='http://i.imgur.com/73StoL8.png' width=400></p>
+<!-- ![Imgur](http://i.imgur.com/73StoL8.png) -->
+
+<p>User has two groups of cells named E1 and E2, respectively. E1 (squares) and E2
+(circles) are generated at two different conditions, and both have 96 cells. The
+ultimate goal is to compare and find the possible gene expression differences in
+single-cell level between the two conditions, therefore batch effect should be
+alleviated as much as possible.</p>
+<p>Here is a possible experiment design. First, only 48 cells of each condition are
+located in same one 96-well cell plate. This is to handle possible batch effect
+during cell preparation. Second, 96 cells of each plate are labeled with cell
+barcodes 1-96 as usual. Third, each plate has its own Illumina sequencing barcode
+(colored in yellow and green). This is similar to <a href="#example-0">Example-0</a>.
+Finally, all cells are mixed together and get sequenced in two lanes (colored in
+purple and black). This is similar to <a href="#example-1">Example-1</a>.</p>
+<p>The experiment design gives user four sets of CEL-Seq2 reads.</p>
+<p>Despite of the complexed flow, the example content of experiment table in this
+case study is still as easy as:</p>
+<table>
+<thead>
+<tr>
+<th>SAMPLE_NAME</th>
+<th>CELL_BARCODES_INDEX</th>
+<th>R1</th>
+<th>R2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E1 <img alt="◻️" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/25fb.svg" title=":white_medium_square:" /></td>
+<td>1-48</td>
+<td>S1_L001_R1.fastq.gz   <img alt="1️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0031-20e3.svg" title=":one:" /></td>
+<td>S1_L001_R2.fastq.gz   <img alt="1️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0031-20e3.svg" title=":one:" /></td>
+</tr>
+<tr>
+<td>E2  <img alt="⚪" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/26aa.svg" title=":white_circle:" /></td>
+<td>49-96</td>
+<td>S1_L001_R1.fastq.gz   <img alt="1️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0031-20e3.svg" title=":one:" /></td>
+<td>S1_L001_R2.fastq.gz   <img alt="1️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0031-20e3.svg" title=":one:" /></td>
+</tr>
+<tr>
+<td>E1 <img alt="◻️" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/25fb.svg" title=":white_medium_square:" /></td>
+<td>1-48</td>
+<td>S1_L002_R1.fastq.gz   <img alt="2️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0032-20e3.svg" title=":two:" /></td>
+<td>S1_L002_R2.fastq.gz   <img alt="2️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0032-20e3.svg" title=":two:" /></td>
+</tr>
+<tr>
+<td>E2  <img alt="⚪" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/26aa.svg" title=":white_circle:" /></td>
+<td>49-96</td>
+<td>S1_L002_R1.fastq.gz   <img alt="2️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0032-20e3.svg" title=":two:" /></td>
+<td>S1_L002_R2.fastq.gz   <img alt="2️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0032-20e3.svg" title=":two:" /></td>
+</tr>
+<tr>
+<td>E1 <img alt="◻️" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/25fb.svg" title=":white_medium_square:" /></td>
+<td>49-96</td>
+<td>S2_L001_R1.fastq.gz   <img alt="3️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0033-20e3.svg" title=":three:" /></td>
+<td>S2_L001_R2.fastq.gz   <img alt="3️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0033-20e3.svg" title=":three:" /></td>
+</tr>
+<tr>
+<td>E2     <img alt="⚪" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/26aa.svg" title=":white_circle:" /></td>
+<td>1-48</td>
+<td>S2_L001_R1.fastq.gz       <img alt="3️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0033-20e3.svg" title=":three:" /></td>
+<td>S2_L001_R2.fastq.gz       <img alt="3️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0033-20e3.svg" title=":three:" /></td>
+</tr>
+<tr>
+<td>E1 <img alt="◻️" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/25fb.svg" title=":white_medium_square:" /></td>
+<td>49-96</td>
+<td>S2_L002_R1.fastq.gz   <img alt="4️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0034-20e3.svg" title=":four:" /></td>
+<td>S2_L002_R2.fastq.gz   <img alt="4️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0034-20e3.svg" title=":four:" /></td>
+</tr>
+<tr>
+<td>E2 <img alt="⚪" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/26aa.svg" title=":white_circle:" /></td>
+<td>1-48</td>
+<td>S2_L002_R1.fastq.gz   <img alt="4️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0034-20e3.svg" title=":four:" /></td>
+<td>S2_L002_R2.fastq.gz   <img alt="4️⃣" class="emojione" src="https://cdn.jsdelivr.net/emojione/assets/svg/0034-20e3.svg" title=":four:" /></td>
+</tr>
+</tbody>
+</table>
+                
+                  
+                
+              
+              
+                
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../setup_config/" title="Setup configuration" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Setup configuration
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../launch_pipeline/" title="Launch pipeline" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Launch pipeline
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Copyright &copy 2017 New York University
+          </div>
+        
+        powered by
+        <a href="http://www.mkdocs.org">MkDocs</a>
+        and
+        <a href="https://squidfunk.github.io/mkdocs-material/">
+          Material for MkDocs</a>
+      </div>
+      
+        
+  <div class="md-footer-social">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+      <a href="https://github.com/yanailab" class="md-footer-social__link fa fa-github"></a>
+    
+      <a href="https://yanailab.org" class="md-footer-social__link fa fa-link"></a>
+    
+  </div>
+
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/application.9fb73e57.js"></script>
+      
+      <script>app.initialize({version:"0.17.2",url:{base:"../.."}})</script>
+      
+    
+    
+      
+    
+  </body>
+</html>
