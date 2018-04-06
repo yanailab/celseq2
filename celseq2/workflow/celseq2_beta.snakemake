@@ -139,6 +139,7 @@ if RUN_CELSEQ2_TO_ST:
                 mkfolder(SUBDIR_QSUB)
                 shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
             if not KEEP_INTERMEDIATE:
+                print_logger('Cleaning... ')
                 rmfolder(SUBDIR_FASTQ);
                 # rmfolder(SUBDIR_ANNO);
                 rmfolder(SUBDIR_ALIGN); rmfolder(SUBDIR_ALIGN_ITEM);
@@ -158,6 +159,7 @@ else:
                 mkfolder(SUBDIR_QSUB)
                 shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
             if not KEEP_INTERMEDIATE:
+                print_logger('Cleaning... ')
                 rmfolder(SUBDIR_FASTQ);
                 # rmfolder(SUBDIR_ANNO);
                 rmfolder(SUBDIR_ALIGN); rmfolder(SUBDIR_ALIGN_ITEM);
