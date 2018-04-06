@@ -140,6 +140,8 @@ setup(
 
             ('bc_demultiplex = '
              'celseq2.demultiplex:main'),
+            ('sam-demultiplex = '
+             'celseq2.demultiplex_sam:main'),
             ('cook-annotation = '
              'celseq2.prepare_annotation_model:main'),
             ('count-umi = '

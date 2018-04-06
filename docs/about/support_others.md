@@ -7,3 +7,4 @@ principles of the UMI and cell barcodes.
 1. Spatial transcriptome data. `celseq2` works similar to
    [st_pipeline](https://github.com/SpatialTranscriptomicsResearch/st_pipeline),
    except that `celseq2` uses Bowtie2 for aligment while `st_pipeline` uses STAR.
+   After version 0.5.1 `celseq2` is able to use STAR for ST as well.

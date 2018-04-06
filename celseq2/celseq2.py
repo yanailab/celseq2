@@ -16,9 +16,9 @@ Select top-used parameters from snakemake.snakemake():
     * -p
     * -r
     * -T
-    * -w 1800 # 30min
-    * --keep-going
-    * --restart-times 1
+    * -w 300 # 5min
+    # * --keep-going (no longer True)
+    * --restart-times 2
 
 Select optional parameters from snakemake.snakemake():
     * --ri v.s. --ii
@@ -27,6 +27,7 @@ Select optional parameters from snakemake.snakemake():
     * -j
     * --cluster
     * -n
+    * --notemp (--nt)
 
 Refs:
     - https://snakemake.readthedocs.io/en/stable/api_reference/snakemake.html
@@ -65,6 +66,11 @@ def get_argument_parser():
         help="Read has to be mapped to the opposite strand as the feature")
 
     parser.add_argument(
+        "--celseq2-to-st", "--st",
+        action="store_true", default=False,
+        help="Rotate the UMI-count matrix to a shape of spots by genes.")
+
+    parser.add_argument(
         "--cores", "--jobs", "-j",
         action="store",
         nargs="?",
@@ -98,7 +104,11 @@ def get_argument_parser():
         "--ignore-incomplete", "--ii",
         action="store_true",
         help="Do not check for incomplete output files.")
-
+    parser.add_argument(
+        "--keep-temp", dest='keep_temp',
+        action="store_true",
+        help="Keep the intermediate files after run.")
+    parser.set_defaults(keep_temp=False)
     parser.add_argument(
         "--version", "-v",
         action="version",
@@ -120,15 +130,17 @@ def main():
         configfile=args.config_file,
         config={'output_dir': args.output_dir,
                 'experiment_table': args.experiment_table,
-                'stranded': stranded},
+                'stranded': stranded,
+                'run_celseq2_to_st': args.celseq2_to_st,
+                'keep_intermediate': args.keep_temp},
 
         printshellcmds=True,
         printreason=True,
         timestamp=True,
-        latency_wait=1800,
+        latency_wait=300,
         jobname="celseq2_job.{rulename}.{jobid}.sh",
-        keepgoing=True,
-        restart_times=1,
+        keepgoing=False,
+        restart_times=2,
 
         dryrun=args.dryrun,
         lock=not args.nolock,
@@ -139,7 +151,8 @@ def main():
         nodes=args.cores,
 
         force_incomplete=args.rerun_incomplete,
-        ignore_incomplete=args.ignore_incomplete)
+        ignore_incomplete=args.ignore_incomplete,
+        notemp=args.keep_temp)
 
     sys.exit(0 if success else 1)
 
