@@ -390,6 +390,7 @@ rule combo_demultiplexing_sam:
         sam = dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemID}', '{bcID}.sam')),
     params:
         jobs = len(item_names),
+        claim_used_bc = True,
     run:
         p = Pool(params.jobs)
         for item_sam in input.sam:
@@ -397,10 +398,17 @@ rule combo_demultiplexing_sam:
             demultiplex_itemID_dir = join_path(DIR_PROJ, SUBDIR_ALIGN, itemID)
             mkfolder(demultiplex_itemID_dir)
 
+            item_bc_used = bc_used[item_names.index(itemID)]
             cmd = 'sam-demultiplex '
             cmd += ' --sbam {} '.format(item_sam)
             cmd += ' --savetodir {} '.format(demultiplex_itemID_dir)
             cmd += ' --bc-length {} '.format(BC_LENGTH)
+            if params.claim_used_bc:
+                cmd += ' --claim '
+                cmd += ' --bc-index {} '.format(BC_INDEX_FPATH)
+                cmd += ' --bc-seq-column {} '.format(BC_SEQ_COLUMN)
+                cmd += ' --bc-index-used {} '.format(item_bc_used)
+
             p.apply_async(shell, args=(cmd,))
         p.close()
         p.join()
