@@ -105,9 +105,10 @@ def get_argument_parser():
         action="store_true",
         help="Do not check for incomplete output files.")
     parser.add_argument(
-        "--notemp", "--nt",
+        "--keep-temp", dest='keep_temp',
         action="store_true",
-        help="Ignore temp() declarations.")
+        help="Keep the intermediate files after run.")
+    parser.set_defaults(keep_temp=False)
     parser.add_argument(
         "--version", "-v",
         action="version",
@@ -130,7 +131,8 @@ def main():
         config={'output_dir': args.output_dir,
                 'experiment_table': args.experiment_table,
                 'stranded': stranded,
-                'run_celseq2_to_st': args.celseq2_to_st},
+                'run_celseq2_to_st': args.celseq2_to_st,
+                'keep_intermediate': args.keep_temp},
 
         printshellcmds=True,
         printreason=True,
@@ -150,7 +152,7 @@ def main():
 
         force_incomplete=args.rerun_incomplete,
         ignore_incomplete=args.ignore_incomplete,
-        notemp=args.notemp)
+        notemp=args.keep_temp)
 
     sys.exit(0 if success else 1)
 
