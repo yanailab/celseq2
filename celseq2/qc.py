@@ -84,12 +84,12 @@ def plotly_qc(fpath, saveto, sep=',', name=''):
 
     total_num_UMIs = expr.sum(axis=0)
     num_detected_genes = (expr > 0).sum(axis=0)
-    mt_index = pd.Series(
-        [x for x in expr.index if x.startswith('mt-') or x.startswith('MT-')])
+    mt_index = [x for x in expr.index if x.startswith(
+        'mt-') or x.startswith('MT-')]
     if not mt_index:
         percent_mt = 0
     else:
-        mt_umis = expr.loc[mt_index, :].sum(axis=0)
+        mt_umis = expr.loc[pd.Series(mt_index), :].sum(axis=0)
         percent_mt = mt_umis / total_num_UMIs
         percent_mt = percent_mt.replace(np.inf, 0)
 

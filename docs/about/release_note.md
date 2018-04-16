@@ -10,6 +10,17 @@
 
 ---
 
+## :fa-flag-checkered: **v0.5.2**
+
+:fa-calendar: **2018-04-16**
+
+:fa-star: **Features**
+
+- Generate QC plots for UMI-counts matrices. If ST is performed, an extra QC plot masked on grid is generated.
+- Allow experienced users to feed extra parameters to align. See issue #10.
+
+---
+
 ## :fa-flag-checkered: **v0.5.1**
 
 :fa-calendar: **2018-04-05**

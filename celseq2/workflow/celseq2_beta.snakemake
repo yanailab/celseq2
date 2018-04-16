@@ -43,6 +43,8 @@ BOWTIE2_INDEX_PREFIX = config.get('BOWTIE2_INDEX_PREFIX', None)
 BOWTIE2 = config.get('BOWTIE2', None)  # '/local/apps/bowtie2/2.3.1/bowtie2'
 STAR_INDEX_DIR = config.get('STAR_INDEX_DIR', None)
 STAR = config.get('STAR', None)
+ALIGNER_EXTRA_PARAMETERS = config.get('ALIGNER_EXTRA_PARAMETERS', '')
+
 ## Annotations ##
 # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
 GFF = config.get('GFF', None)
@@ -345,20 +347,21 @@ if ALIGNER == 'bowtie2':
             sam = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
                             '{itemID}', ALIGNER+'.bigsam'),
         params:
-            threads = num_threads
+            threads = num_threads,
+            aligner_extra_parameters = ALIGNER_EXTRA_PARAMETERS,
         log:
             join_path(DIR_PROJ, SUBDIR_LOG, '{itemID}',
                       'Align-Bowtie2.log')
         run:
-            shell(
-                """
-                {BOWTIE2} \
-                -p {params.threads} \
-                -x {BOWTIE2_INDEX_PREFIX} \
-                -U {input.fq} \
-                -S {output.sam} 2>{log} \
-                --seed 42
-                """)
+            cmd = '{BOWTIE2} '
+            cmd += '-p {params.threads} '
+            cmd += '-x {BOWTIE2_INDEX_PREFIX} '
+            cmd += '-U {input.fq} '
+            cmd += '-S {output.sam} '
+            cmd += '--seed 42 '
+            cmd += '{params.aligner_extra_parameters} '
+            cmd += '2>{log} '
+            shell(cmd)
 
 if ALIGNER == 'star':
     rule align_star:
@@ -377,9 +380,10 @@ if ALIGNER == 'star':
             star_prefix = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
                                     '{itemID}', '.star', ''),
             threads = num_threads,
+            aligner_extra_parameters = ALIGNER_EXTRA_PARAMETERS,
         run:
             mkfolder(params.star_prefix)
-            cmd = 'STAR '
+            cmd = '{STAR} '
             cmd += ' --runRNGseed 42 '
             cmd += ' --genomeLoad NoSharedMemory '
             cmd += ' --runThreadN {params.threads} '
@@ -388,6 +392,7 @@ if ALIGNER == 'star':
             cmd += ' --readFilesIn {input.fq} '
             cmd += ' --outFileNamePrefix {params.star_prefix} '
             # cmd += ' --outSAMmultNmax 1 '
+            cmd += ' {params.aligner_extra_parameters} '
             shell(cmd)
 
             starsam = join_path(params.star_prefix, 'Aligned.out.sam')
