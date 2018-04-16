@@ -23,6 +23,10 @@ STAR: '/absolute/path/to/star'
 ## Whare is the directory to save STAR index?
 STAR_INDEX_DIR: '/absolute/path/to/star/folder/'
 
+## Extra parameters to run aligner. For example:
+## '--outSAMmultNmax 1 --outFilterScoreMinOverLread 0.3'
+ALIGNER_EXTRA_PARAMETERS: ''
+
 ####################################
 ## Annotations ##
 ####################################
