@@ -104,12 +104,13 @@ SUBDIR_LOG = 'small_log'
 SUBDIR_QSUB = 'qsub_log'
 SUBDIR_ANNO = 'annotation'
 SUBDIR_REPORT = 'report'
+SUBDIR_QC_EXPR = 'qc_expr'
 
 SUBDIRS = [SUBDIR_INPUT,
            SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_ALIGN_ITEM,
            SUBDIR_UMI_CNT, SUBDIR_UMI_SET,
            SUBDIR_EXPR,
-           SUBDIR_REPORT,
+           SUBDIR_REPORT, SUBDIR_QC_EXPR,
            SUBDIR_LOG, SUBDIR_QSUB, SUBDIR_ANNO
            ]
 
@@ -128,9 +129,7 @@ workdir: DIR_PROJ
 if RUN_CELSEQ2_TO_ST:
     rule all:
         input:
-            # '_done_annotation',
             '_done_UMI',
-            # '_done_report',
             '_done_ST',
         output:
             touch('_DONE'),
@@ -149,9 +148,7 @@ if RUN_CELSEQ2_TO_ST:
 else:
     rule all:
         input:
-            # '_done_annotation',
             '_done_UMI',
-            # '_done_report',
         output:
             touch('_DONE'),
         run:
@@ -173,32 +170,36 @@ rule COUNT_MATRIX:
                      expid=list(set(sample_list))),
         hdf = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.h5'),
                      expid=list(set(sample_list))),
+        html = expand(join_path(DIR_PROJ, SUBDIR_QC_EXPR,
+                                '{expid}', 'QC.html'),
+                      expid=list(set(sample_list))),
     output:
         touch('_done_UMI')
     message: 'Finished counting UMI-count matrix.'
     run:
-        # if ALIGNER == 'star':
-        #     shell('rm {}'.format('_done_star_genome_loaded'))
-        #     print('Free memory loaded by STAR', flush=True)
-        #     with tempfile.TemporaryDirectory() as tmpdirname:
-        #         cmd = 'STAR '
-        #         cmd += '--genomeLoad Remove '
-        #         cmd += '--genomeDir {STAR_INDEX_DIR} '
-        #         cmd += '--outFileNamePrefix '
-        #         cmd += join_path(tmpdirname, '')
-        #         shell(cmd)
         if glob.glob('celseq2_job*.sh*'):
             mkfolder(SUBDIR_QSUB)
             shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
 
         print_logger('UMI-count matrix is saved at {}'.format(input.csv))
 
+rule QC_COUNT_MATRIX:
+    input:
+        html = expand(join_path(DIR_PROJ, SUBDIR_QC_EXPR,
+                                '{expid}', 'QC.html'),
+                      expid=list(set(sample_list))),
+    message: 'Finished QC UMI-count matrix.'
 
+
+# join_path(DIR_PROJ, SUBDIR_QC_EXPR, '{expid}', 'QC_ST.html')
 if RUN_CELSEQ2_TO_ST:
     rule CELSEQ2_TO_ST:
         input:
             tsv = expand(join_path(DIR_PROJ, SUBDIR_ST, '{expid}', 'ST.tsv'),
                          expid=list(set(sample_list))),
+            html = expand(join_path(DIR_PROJ, SUBDIR_QC_EXPR,
+                                    '{expid}', 'QC_ST.html'),
+                          expid=list(set(sample_list))),
         message: 'Convert to ST format.'
         output:
             touch('_done_ST')
@@ -206,7 +207,6 @@ if RUN_CELSEQ2_TO_ST:
             if glob.glob('celseq2_job*.sh*'):
                 mkfolder(SUBDIR_QSUB)
                 shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
-
 
     rule _celseq2_to_st:
         input:
@@ -226,6 +226,20 @@ if RUN_CELSEQ2_TO_ST:
                 cmd += ' --exclude-empty-spots '
             if params.exclude_nondetected_genes:
                 cmd += ' --exclude-nondetected-genes '
+            shell(cmd)
+
+    rule qc_umi_matrix_per_experiment_ST:
+        input:
+            tsv = join_path(DIR_PROJ, SUBDIR_ST, '{expid}', 'ST.tsv'),
+        output:
+            html = join_path(DIR_PROJ, SUBDIR_QC_EXPR, '{expid}', 'QC_ST.html'),
+        params:
+            expid = '{expid}',
+        run:
+            cmd = 'celseq2-qc '
+            cmd += '{input.tsv} {output.html} '
+            cmd += '--name {params.expid} '
+            cmd += '--st'
             shell(cmd)
 
 
@@ -570,7 +584,19 @@ rule summarize_umi_matrix_per_experiment:
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, 'expr.h5'), 'table')
 
-
+rule qc_umi_matrix_per_experiment:
+    input:
+        csv = join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
+    output:
+        html = join_path(DIR_PROJ, SUBDIR_QC_EXPR, '{expid}', 'QC.html'),
+    params:
+        expid = '{expid}',
+    run:
+        cmd = 'celseq2-qc '
+        cmd += '{input.csv} {output.html} '
+        cmd += '--name {params.expid} '
+        cmd += '--sep {}'.format(',')
+        shell(cmd)
 
 # rule report_alignment_log:
 #     input:

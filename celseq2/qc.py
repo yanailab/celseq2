@@ -86,9 +86,13 @@ def plotly_qc(fpath, saveto, sep=',', name=''):
     num_detected_genes = (expr > 0).sum(axis=0)
     mt_index = pd.Series(
         [x for x in expr.index if x.startswith('mt-') or x.startswith('MT-')])
-    mt_umis = expr.loc[mt_index, :].sum(axis=0)
-    percent_mt = mt_umis / total_num_UMIs
-    percent_mt = percent_mt.replace(np.inf, 0)
+    if not mt_index:
+        percent_mt = 0
+    else:
+        mt_umis = expr.loc[mt_index, :].sum(axis=0)
+        percent_mt = mt_umis / total_num_UMIs
+        percent_mt = percent_mt.replace(np.inf, 0)
+
     qc = pd.DataFrame(dict(total_num_UMIs=total_num_UMIs,
                            num_detected_genes=num_detected_genes,
                            percent_mt=percent_mt))
@@ -109,7 +113,7 @@ def plotly_qc(fpath, saveto, sep=',', name=''):
         x=qc.total_num_UMIs,
         y=qc.percent_mt,
         xlab='#Total UMIs (median={})'.format(qc.total_num_UMIs.median()),
-        ylab='%MT (median={:6.4f})'.format(qc.percent_mt.median()),
+        ylab='MT Fraction (median={:6.4f})'.format(qc.percent_mt.median()),
         main=name,
         hover_text=qc.index.values)
     plotly_mt_vs_umi.layout.yaxis.scaleanchor = None
@@ -188,8 +192,12 @@ def plotly_qc_st(fpath, saveto, sep='\t', name=''):
     ST_detected_genes = (ST.iloc[:, 2:] > 0).sum(axis=1)
     mt_cols = [x for x in ST.columns if x.startswith(
         'mt-') or x.startswith('MT-')]
-    ST_percent_mt = ST[mt_cols].sum(axis=1) / ST_total_UMIs
-    ST_percent_mt.replace(np.inf, 0)
+    if not mt_cols:
+        ST_percent_mt = 0
+    else:
+        ST_percent_mt = ST[mt_cols].sum(axis=1) / ST_total_UMIs
+        ST_percent_mt.replace(np.inf, 0)
+
     ST_qc = pd.DataFrame(
         dict(Row=ST.Row, Col=ST.Col,
              total_num_UMIs=ST_total_UMIs,
@@ -247,8 +255,8 @@ def main():
         help=('file path (CSV/TSV) to the expression file with genes/features '
               'as rows and cells/samples on columns. '
               'First column saves gene names.'))
-    parser.add_argument('saveto', type=str, metavar='FILENAME')
-
+    parser.add_argument('saveto', type=str, metavar='FILENAME',
+                        help='File path (html) to save the QC plots.')
     parser.add_argument('--name', type=str, metavar='STR', default='')
     parser.add_argument('--sep', type=str, default='\t',
                         help='File sep (default: \'\t\')')
