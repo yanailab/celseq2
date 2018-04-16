@@ -166,6 +166,8 @@ setup(
              'celseq2.diagnose:main'),
             ('celseq2-to-st = '
              'celseq2.support.st_pipeline:main'),
+            ('celseq2-qc = '
+             'celseq2.qc:main'),
         ],
     },
 
