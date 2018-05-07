@@ -1,5 +1,3 @@
-######################################################################
-## Dependencies ##
 from celseq2.helper import join_path, base_name, dir_name, print_logger
 from celseq2.helper import rmfolder, mkfolder, is_nonempty_file
 from celseq2.helper import cook_sample_sheet, popen_communicate
@@ -18,16 +16,18 @@ import tempfile
 import shutil
 import os
 
-
-## Inforamtion ##
+'''
+Part-1 Reading Config
+'''
+# Inforamtion
 # '/ifs/home/yy1533/Lab/cel-seq-pipe/demo/celseq2'
 DIR_PROJ = config.get('output_dir', None)
 
-## Sample Sheet ##
+# Sample Sheet
 SAMPLE_TABLE_FPATH = config.get('experiment_table', None)
 SAMPLE_TABLE = cook_sample_sheet(SAMPLE_TABLE_FPATH)  # ''
 
-## CEL-seq2 Tech Setting ##
+# CEL-seq2 Tech Setting
 # '/ifs/data/yanailab/refs/barcodes/barcodes_cel-seq_umis96.tab'
 BC_INDEX_FPATH = config.get('BC_INDEX_FPATH', None)
 BC_IDs_DEFAULT = config.get('BC_IDs_DEFAULT', None)  # '1-96'
@@ -37,7 +37,7 @@ BC_START_POSITION = config.get('BC_START_POSITION', None)
 UMI_LENGTH = config.get('UMI_LENGTH', None)  # 6
 BC_LENGTH = config.get('BC_LENGTH', None)  # 6
 
-## Tools ##
+# Tools
 # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/genome/Danio_rerio.GRCz10.dna.toplevel'
 BOWTIE2_INDEX_PREFIX = config.get('BOWTIE2_INDEX_PREFIX', None)
 BOWTIE2 = config.get('BOWTIE2', None)  # '/local/apps/bowtie2/2.3.1/bowtie2'
@@ -45,7 +45,7 @@ STAR_INDEX_DIR = config.get('STAR_INDEX_DIR', None)
 STAR = config.get('STAR', None)
 ALIGNER_EXTRA_PARAMETERS = config.get('ALIGNER_EXTRA_PARAMETERS', '')
 
-## Annotations ##
+# Annotations
 # '/ifs/data/yanailab/refs/danio_rerio/danRer10_87/gtf/Danio_rerio.GRCz10.87.gtf.gz'
 GFF = config.get('GFF', None)
 FEATURE_ID = config.get('FEATURE_ID', 'gene_name')
@@ -53,35 +53,29 @@ FEATURE_CONTENT = config.get('FEATURE_CONTENT', 'exon')
 GENE_BIOTYPE = config.get('GENE_BIOTYPE', None)
 if not GENE_BIOTYPE: GENE_BIOTYPE = ();
 
-## Demultiplexing ##
+# Demultiplexing
 FASTQ_QUAL_MIN_OF_BC = config.get('FASTQ_QUAL_MIN_OF_BC', None)  # 10
 CUT_LENGTH = config.get('CUT_LENGTH', None)  # 35
 SAVE_UNKNOWN_BC_FASTQ = config.get('SAVE_UNKNOWN_BC_FASTQ', False) # False
-## Alignment ##
+# Alignment
 ALIGNER = config.get('ALIGNER', None)  # 'bowtie2', 'star'
 assert (ALIGNER), 'Error: Specify aligner.'
 assert (ALIGNER in ['bowtie2', 'star']), 'Error: Unknown aligner.'
 
-## UMI Count ##
+# UMI Count
 ALN_QUAL_MIN = config.get('ALN_QUAL_MIN', None)  # 0
 STRANDED = config.get('stranded', 'yes')
 
-
-## Running Parameters ##
-# bc_ids_used=config.get('bc_ids_used', None)  # '1,2,3,4-5'
+# Running Parameters
 num_threads = config.get('num_threads', 16)  # 5
 verbose = config.get('verbose', True)  # True
 
 RUN_CELSEQ2_TO_ST = config.get('run_celseq2_to_st', False)
 KEEP_INTERMEDIATE = config.get('keep_intermediate', False)
 
-#######################
-## Pipeline reserved ##
-#######################
+# Pipeline reserved variables
 item_names = list(SAMPLE_TABLE.index)
-# expand('{r1_fpath}', r1_fpath=SAMPLE_TABLE['R1'].values)
 sample_list = SAMPLE_TABLE['SAMPLE_NAME'].values
-# expand('{r2_fpath}', r2_fpath=SAMPLE_TABLE['R2'].values)
 R1 = SAMPLE_TABLE['R1'].values
 R2 = SAMPLE_TABLE['R2'].values
 bc_used = SAMPLE_TABLE['CELL_BARCODES_INDEX'].values
@@ -120,14 +114,15 @@ SUBDIRS = [SUBDIR_INPUT,
 #                      "_low_map_qual", '_multimapped', "_uniquemapped",
 #                      "_no_feature", "_ambiguous",
 #                      "_total"]
-## Dev ##
 
-#####################
-## Snakemake rules ##
-#####################
-
+'''
+Part-2: Snakemake rules
+'''
 workdir: DIR_PROJ
 
+'''
+Default task named "all" to request all outputs.
+'''
 if RUN_CELSEQ2_TO_ST:
     rule all:
         input:
@@ -166,6 +161,9 @@ else:
                 rmfolder(SUBDIR_UMI_CNT); rmfolder(SUBDIR_UMI_SET);
 
 
+'''
+Subtask named "COUNT_MATRIX" to request the UMIs matrices outputs
+'''
 rule COUNT_MATRIX:
     input:
         csv = expand(join_path(DIR_PROJ, SUBDIR_EXPR, '{expid}', 'expr.csv'),
@@ -185,6 +183,9 @@ rule COUNT_MATRIX:
 
         print_logger('UMI-count matrix is saved at {}'.format(input.csv))
 
+'''
+Subtask named "QC_COUNT_MATRIX" to request the QCs plots of UMIs matrices
+'''
 rule QC_COUNT_MATRIX:
     input:
         html = expand(join_path(DIR_PROJ, SUBDIR_QC_EXPR,
@@ -192,8 +193,9 @@ rule QC_COUNT_MATRIX:
                       expid=list(set(sample_list))),
     message: 'Finished QC UMI-count matrix.'
 
-
-# join_path(DIR_PROJ, SUBDIR_QC_EXPR, '{expid}', 'QC_ST.html')
+'''
+Subtask named "CELSEQ2_TO_ST" to request spatial-transcriptomics data format.
+'''
 if RUN_CELSEQ2_TO_ST:
     rule CELSEQ2_TO_ST:
         input:
@@ -254,7 +256,10 @@ if RUN_CELSEQ2_TO_ST:
 #         touch('_done_report')
 
 
-# Combo-demultiplexing
+# Pipeline Step 1a: combo_demultiplexing
+# Inputs: R1 (barcode) and R2 (mRNA)
+# Output: A list of FASTQs extracted from R2 per cells and they are tagged with
+# cell barcode and UMI sequence gained from R1.
 rule combo_demultiplexing:
     input: SAMPLE_TABLE_FPATH,
     output:
@@ -305,13 +310,18 @@ rule combo_demultiplexing:
         p.join()
         shell('touch _done_combodemultiplex')
 
+
+'''
+Subtask named "TAG_FASTQ" to request intermediate files: mRNA.fastq tagged
+with cell id and UMI seq gained from barcode.fastq
+'''
 rule TAG_FASTQ:
     input:
         expand(join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemID}', 'TAGGED.bigfastq'),
                itemID=item_names),
     message: "Finished Tagging FASTQs."
 
-
+# Pipeline Step 1b: Merge tagged FASTQs
 rule tag_fastq:
     input:
         fq = dynamic(join_path(DIR_PROJ, SUBDIR_FASTQ,
@@ -332,7 +342,7 @@ rule tag_fastq:
             print_logger('Tagged FQ: {}'.format(itemid_tag_fq))
 
 
-## Alignment ##
+# Pipeline Step 2a: Alignment
 rule ALIGNMENT:
     input:
         expand(join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM, '{itemID}', ALIGNER+'.bigsam'),
@@ -401,7 +411,7 @@ if ALIGNER == 'star':
             shell('mv {starsam} {output.sam} ')
             shell('mv {starlog} {output.log} ')
 
-
+# Pipeline Step 2b: Combo-demultiplex the SAM file
 rule combo_demultiplexing_sam:
     input:
         sam = expand(join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
@@ -436,7 +446,11 @@ rule combo_demultiplexing_sam:
         shell('touch _done_combodemultiplex_sam')
 
 
-## HT-seq Count UMI ##
+# Pipeline Step 3a: cook ht-seq recognized feature object before counting UMIs
+# Input: GTF/GFF file
+# Output: a pickle file saving a tuple (features, exported_genes) where:
+#     - features: HTSeq.GenomicArrayOfSets(). *All* exons locations ~ genes.
+#     - exported_genes: a sorted list. Gene id / gene name (default all genes).
 rule COOK_ANNOTATION:
     input:
         SAMPLE_TABLE_FPATH,
@@ -463,7 +477,7 @@ rule COOK_ANNOTATION:
         if params.gene_type:
             print_logger('Types of reported gene: {}.'.format(
                 ', '.join(params.gene_type)))
-            gene_df = get_genes(GFF, valid_biotypes = set(params.gene_type))
+            gene_df = get_genes(GFF, valid_biotypes=set(params.gene_type))
             exported_genes = sorted(gene_df['name'].values)
             print_logger('Number of reported genes: {}.'.format(
                 len(exported_genes)))
@@ -472,11 +486,17 @@ rule COOK_ANNOTATION:
             shell('touch {output.anno_csv}')
 
         with open(output.anno_pkl, 'wb') as fh:
-            pickle.dump( (features, exported_genes), fh)
+            pickle.dump((features, exported_genes), fh)
 
         shell('touch {output.flag} ')
 
-
+# Pipeline Step 3b: Count UMIs
+# Inputs:
+#   - annotation object
+#   - SAM per cell
+# Outputs: two pickle files per cell
+#   - umicnt: dict(str: set(str)), i.e., dict(gene ~ set(UMI_sequence))
+#   - umiset: Counter(str: int), i.e., Counter(gene ~ "number of UMIs")
 rule count_umi:
     input:
         gff = rules.COOK_ANNOTATION.output.anno_pkl,
@@ -499,7 +519,9 @@ rule count_umi:
         pickle.dump(umi_set, open(output.umiset, 'wb'))
 
 
-# - regular umi-count using *_umicnt.pkl -> umi_count_matrix replicates/lanes per plate
+# Pipeline Step 4a: Merge UMIs of cells to UMI matrix of item
+# Input: a list of umicnt pickle files of cells per item
+# Output: UMI-count matric file (csv & hdf) per item
 rule summarize_umi_matrix_per_item:
     input:
         gff = rules.COOK_ANNOTATION.output.anno_pkl,
@@ -524,6 +546,7 @@ rule summarize_umi_matrix_per_item:
             item_id = base_name(dir_name(f))  # item-1
             item_expr_matrix[item_id][bc_name] = pickle.load(open(f, 'rb'))
 
+        # export to csv/hdf
         for item_id, expr_dict in item_expr_matrix.items():
             exp_id = SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']  # E1
 
@@ -537,12 +560,11 @@ rule summarize_umi_matrix_per_item:
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, item_id, 'expr.h5'), 'table')
 
-
-# - merge umi-count using *_umiset.pkl -> correct umi count per experiment/plate
+# Pipeline Step 4b: Merge UMIs of cells to UMI matrix per experiment
+# Input: a list of umiset pickle files of cells per experiment
+# Output: UMI-count matric file (csv & hdf) per experiment
 rule summarize_umi_matrix_per_experiment:
     input:
-        # gff = join_path(DIR_PROJ, SUBDIR_ANNO,
-        #                 base_name(GFF) + '.pickle'),
         gff = rules.COOK_ANNOTATION.output.anno_pkl,
         umiset = dynamic(join_path(DIR_PROJ, SUBDIR_UMI_SET,
                                    '{itemID}', '{bcID}.pkl')),
@@ -578,6 +600,7 @@ rule summarize_umi_matrix_per_experiment:
                 y2 = umiset_stream.get(x, set())
                 exp_expr_matrix[exp_id][bc_name][x] = y1 | y2
 
+        # export to csv/hdf
         for exp_id, expr_dict in exp_expr_matrix.items():
             for bc, cnt in expr_dict.items():
                 cnt = _flatten_umi_set(cnt)
