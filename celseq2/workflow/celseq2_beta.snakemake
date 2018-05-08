@@ -679,10 +679,11 @@ rule report_combo_demultiplexing:
     output:
         html = join_path(DIR_PROJ, SUBDIR_REPORT, 'demultiplexing_fastq.html')
     run:
-        # Prepare the stats files
+        # stats files [/path/item-1/d.csv, /path/item-2/d.csv]
         stats_fpaths = glob.glob(join_path(DIR_PROJ, SUBDIR_REPORT,
                                            'item-*', 'demultiplexing.csv'))
-        stats_fpaths_labels = [base_name(base_name(f)) for f in stats_fpaths]
+        # labels [item-1, item-2]
+        stats_fpaths_labels = [base_name(dir_name(f)) for f in stats_fpaths]
         work = plotly_demultiplexing_stats(
             fpaths=stats_fpaths,
             saveto=output.html,

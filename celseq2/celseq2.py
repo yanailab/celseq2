@@ -43,6 +43,10 @@ Refs:
     - https://bitbucket.org/snakemake/snakemake/src/e11a57fe1f62f3f56c815d95d82871811dae81b3/snakemake/__init__.py?at=master&fileviewer=file-view-default#__init__.py-580:1127
 '''
 
+task_choices = ['all', 'TAG_FASTQ', 'ANNOTATION', 'ALIGNMENT',
+                'COUNT_MATRIX', 'QC_COUNT_MATRIX', 'CELSEQ2_TO_ST',
+                'REPORT']
+
 
 def get_argument_parser():
     desc = ('celseq2: A Python Package for Processing CEL-Seq2 RNA-Seq Data.')
@@ -52,9 +56,9 @@ def get_argument_parser():
         "target",
         nargs="*",
         default=None,
-        help="Targets to build. May be rules or files.",
-        choices=[None, 'all', 'TAG_FASTQ', 'ANNOTATION', 'ALIGNMENT',
-                 'COUNT_MATRIX', 'QC_COUNT_MATRIX', 'CELSEQ2_TO_ST'])
+        help=('Targets to build. '
+              'May be rules or files. '
+              'Task choices: {}').format(', '.join(task_choices)))
     parser.add_argument(
         "--config-file",
         metavar="FILE",
