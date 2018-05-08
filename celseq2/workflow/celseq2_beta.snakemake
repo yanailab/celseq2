@@ -3,7 +3,8 @@ from celseq2.helper import rmfolder, mkfolder, is_nonempty_file
 from celseq2.helper import cook_sample_sheet, popen_communicate
 from celseq2.prepare_annotation_model import cook_anno_model
 from celseq2.count_umi import count_umi, _flatten_umi_set
-from celseq2.parse_log import parse_bowtie2_report, parse_star_report, merge_reports
+# from celseq2.parse_log import parse_bowtie2_report, parse_star_report, merge_reports
+from celseq2.demultiplex import plotly_demultiplexing_stats
 import pandas as pd
 import glob
 import pickle
@@ -51,12 +52,13 @@ GFF = config.get('GFF', None)
 FEATURE_ID = config.get('FEATURE_ID', 'gene_name')
 FEATURE_CONTENT = config.get('FEATURE_CONTENT', 'exon')
 GENE_BIOTYPE = config.get('GENE_BIOTYPE', None)
-if not GENE_BIOTYPE: GENE_BIOTYPE = ();
+if not GENE_BIOTYPE:
+    GENE_BIOTYPE = ()
 
 # Demultiplexing
 FASTQ_QUAL_MIN_OF_BC = config.get('FASTQ_QUAL_MIN_OF_BC', None)  # 10
 CUT_LENGTH = config.get('CUT_LENGTH', None)  # 35
-SAVE_UNKNOWN_BC_FASTQ = config.get('SAVE_UNKNOWN_BC_FASTQ', False) # False
+SAVE_UNKNOWN_BC_FASTQ = config.get('SAVE_UNKNOWN_BC_FASTQ', False)  # False
 # Alignment
 ALIGNER = config.get('ALIGNER', None)  # 'bowtie2', 'star'
 assert (ALIGNER), 'Error: Specify aligner.'
@@ -136,11 +138,13 @@ if RUN_CELSEQ2_TO_ST:
                 shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
             if not KEEP_INTERMEDIATE:
                 print_logger('Cleaning... ')
-                rmfolder(SUBDIR_FASTQ);
+                rmfolder(SUBDIR_FASTQ)
                 # rmfolder(SUBDIR_ANNO);
-                rmfolder(SUBDIR_ALIGN); rmfolder(SUBDIR_ALIGN_ITEM);
-                rmfolder(SUBDIR_LOG);
-                rmfolder(SUBDIR_UMI_CNT); rmfolder(SUBDIR_UMI_SET);
+                rmfolder(SUBDIR_ALIGN)
+                rmfolder(SUBDIR_ALIGN_ITEM)
+                rmfolder(SUBDIR_LOG)
+                rmfolder(SUBDIR_UMI_CNT)
+                rmfolder(SUBDIR_UMI_SET)
 
 else:
     rule all:
@@ -154,11 +158,13 @@ else:
                 shell('mv -f celseq2_job*.sh* {}'.format(SUBDIR_QSUB))
             if not KEEP_INTERMEDIATE:
                 print_logger('Cleaning... ')
-                rmfolder(SUBDIR_FASTQ);
+                rmfolder(SUBDIR_FASTQ)
                 # rmfolder(SUBDIR_ANNO);
-                rmfolder(SUBDIR_ALIGN); rmfolder(SUBDIR_ALIGN_ITEM);
-                rmfolder(SUBDIR_LOG);
-                rmfolder(SUBDIR_UMI_CNT); rmfolder(SUBDIR_UMI_SET);
+                rmfolder(SUBDIR_ALIGN)
+                rmfolder(SUBDIR_ALIGN_ITEM)
+                rmfolder(SUBDIR_LOG)
+                rmfolder(SUBDIR_UMI_CNT)
+                rmfolder(SUBDIR_UMI_SET)
 
 
 '''
@@ -236,7 +242,8 @@ if RUN_CELSEQ2_TO_ST:
         input:
             tsv = join_path(DIR_PROJ, SUBDIR_ST, '{expid}', 'ST.tsv'),
         output:
-            html = join_path(DIR_PROJ, SUBDIR_QC_EXPR, '{expid}', 'QC_ST.html'),
+            html = join_path(DIR_PROJ, SUBDIR_QC_EXPR,
+                             '{expid}', 'QC_ST.html'),
         params:
             expid = '{expid}',
         run:
@@ -258,8 +265,9 @@ if RUN_CELSEQ2_TO_ST:
 
 # Pipeline Step 1a: combo_demultiplexing
 # Inputs: R1 (barcode) and R2 (mRNA)
-# Output: A list of FASTQs extracted from R2 per cells and they are tagged with
-# cell barcode and UMI sequence gained from R1.
+# Output:
+#   - A list of FASTQs extracted from R2 per cells and they are tagged with cell
+#     barcode and UMI sequence gained from R1.
 rule combo_demultiplexing:
     input: SAMPLE_TABLE_FPATH,
     output:
@@ -345,17 +353,18 @@ rule tag_fastq:
 # Pipeline Step 2a: Alignment
 rule ALIGNMENT:
     input:
-        expand(join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM, '{itemID}', ALIGNER+'.bigsam'),
+        expand(join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM, '{itemID}', ALIGNER + '.bigsam'),
                itemID=item_names),
     message: "Finished Alignment."
 
 if ALIGNER == 'bowtie2':
     rule align_bowtie2:
         input:
-            fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemID}', 'TAGGED.bigfastq'),
+            fq = join_path(DIR_PROJ, SUBDIR_FASTQ,
+                           '{itemID}', 'TAGGED.bigfastq'),
         output:
             sam = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
-                            '{itemID}', ALIGNER+'.bigsam'),
+                            '{itemID}', ALIGNER + '.bigsam'),
         params:
             threads = num_threads,
             aligner_extra_parameters = ALIGNER_EXTRA_PARAMETERS,
@@ -376,10 +385,11 @@ if ALIGNER == 'bowtie2':
 if ALIGNER == 'star':
     rule align_star:
         input:
-            fq = join_path(DIR_PROJ, SUBDIR_FASTQ, '{itemID}', 'TAGGED.bigfastq'),
+            fq = join_path(DIR_PROJ, SUBDIR_FASTQ,
+                           '{itemID}', 'TAGGED.bigfastq'),
         output:
             sam = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
-                            '{itemID}', ALIGNER+'.bigsam'),
+                            '{itemID}', ALIGNER + '.bigsam'),
             log = join_path(DIR_PROJ, SUBDIR_LOG,
                             '{itemID}', 'Align-STAR.log'),
             # starsam = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM, '{itemID}', '.star',
@@ -415,10 +425,11 @@ if ALIGNER == 'star':
 rule combo_demultiplexing_sam:
     input:
         sam = expand(join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
-                               '{itemID}', ALIGNER+'.bigsam'),
-                     itemID = item_names),
+                               '{itemID}', ALIGNER + '.bigsam'),
+                     itemID=item_names),
     output:
-        sam = dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemID}', '{bcID}.sam')),
+        sam = dynamic(join_path(DIR_PROJ, SUBDIR_ALIGN,
+                                '{itemID}', '{bcID}.sam')),
     params:
         jobs = len(item_names),
         claim_used_bc = True,
@@ -449,8 +460,8 @@ rule combo_demultiplexing_sam:
 # Pipeline Step 3a: cook ht-seq recognized feature object before counting UMIs
 # Input: GTF/GFF file
 # Output: a pickle file saving a tuple (features, exported_genes) where:
-#     - features: HTSeq.GenomicArrayOfSets(). *All* exons locations ~ genes.
-#     - exported_genes: a sorted list. Gene id / gene name (default all genes).
+#     - features: HTSeq.GenomicArrayOfSets(). *All* exons locations ~ set(genes).
+#     - exported_genes: a sorted list. Gene id/name. (Default all genes are exported).
 rule COOK_ANNOTATION:
     input:
         SAMPLE_TABLE_FPATH,
@@ -495,17 +506,17 @@ rule COOK_ANNOTATION:
 #   - annotation object
 #   - SAM per cell
 # Outputs: two pickle files per cell
-#   - umicnt: dict(str: set(str)), i.e., dict(gene ~ set(UMI_sequence))
-#   - umiset: Counter(str: int), i.e., Counter(gene ~ "number of UMIs")
+#   - umicnt: dict(str: set(str)) i.e., dict(gene ~ set(UMI_sequence))
+#   - umiset: Counter(str: int) i.e., Counter(gene ~ number of UMIs)
 rule count_umi:
     input:
         gff = rules.COOK_ANNOTATION.output.anno_pkl,
         sam = join_path(DIR_PROJ, SUBDIR_ALIGN, '{itemID}', '{bcID}.sam'),
     output:
         umicnt = join_path(DIR_PROJ, SUBDIR_UMI_CNT,
-                                '{itemID}', '{bcID}.pkl'),
+                           '{itemID}', '{bcID}.pkl'),
         umiset = join_path(DIR_PROJ, SUBDIR_UMI_SET,
-                                '{itemID}', '{bcID}.pkl'),
+                           '{itemID}', '{bcID}.pkl'),
     message: 'Counting {input.sam}'
     run:
         features_f, _ = pickle.load(open(input.gff, 'rb'))
@@ -538,7 +549,7 @@ rule summarize_umi_matrix_per_item:
     run:
         _, export_genes = pickle.load(open(input.gff, 'rb'))
 
-        # item -> dict(cell_bc -> Counter(umi_vector))
+        # { item -> dict(cell_bc -> Counter(umi_vector)) }
         item_expr_matrix = defaultdict(dict)
 
         for f in input.umicnt:
@@ -579,7 +590,7 @@ rule summarize_umi_matrix_per_experiment:
 
         sample_list = SAMPLE_TABLE['SAMPLE_NAME'].values
 
-        # experiment_id -> dict(cell_bc -> dict(gname -> set(umi)))
+        # { experiment_id -> dict(cell_bc -> dict(gname -> set(umi))) }
         exp_expr_matrix = {}
 
         for exp_id in list(set(sample_list)):
@@ -654,6 +665,30 @@ rule qc_umi_matrix_per_experiment:
 #                               aligner_name=ALIGNER,
 #                               savetocsv=report_item)
 
+
+rule REPORT:
+    input:
+        demultiplexing_fastq = join_path(DIR_PROJ, SUBDIR_REPORT,
+                                         'demultiplexing_fastq.html')
+
+# Inputs: project/report/item-*/demultiplexing.csv
+# Outputs:
+#   - Stats file (csv) per item.
+#   - Plotly box graph for all the items.
+rule report_combo_demultiplexing:
+    output:
+        html = join_path(DIR_PROJ, SUBDIR_REPORT, 'demultiplexing_fastq.html')
+    run:
+        # Prepare the stats files
+        stats_fpaths = glob.glob(join_path(DIR_PROJ, SUBDIR_REPORT,
+                                           'item-*', 'demultiplexing.csv'))
+        stats_fpaths_labels = [base_name(base_name(f)) for f in stats_fpaths]
+        work = plotly_demultiplexing_stats(
+            fpaths=stats_fpaths,
+            saveto=output.html,
+            fnames=stats_fpaths_labels)
+        if not work:
+            touch('{output.html}')
 
 rule cleanall:
     message: "Remove all files under {DIR_PROJ}"
