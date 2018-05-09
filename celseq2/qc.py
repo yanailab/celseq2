@@ -218,7 +218,8 @@ def plotly_qc_st(fpath, saveto, sep='\t', name=''):
         mask_by=ST_qc.total_num_UMIs,
         hover_text=ST_qc.total_num_UMIs.astype('str'),
         colorscale='Viridis',
-        mask_title='#Total UMIs {})'.format(ST_qc.total_num_UMIs.median()))
+        mask_title=('#Total UMIs '
+                    '(median={})').format(ST_qc.total_num_UMIs.median()))
     # 3/3
     plotly_ST_mt = plotly_scatter(
         x=ST_qc.Row, y=ST_qc.Col,
@@ -239,6 +240,7 @@ def plotly_qc_st(fpath, saveto, sep='\t', name=''):
     fig['layout'].update(height=600, width=1900, title=name)
 
     fig.layout.showlegend = False
+    # Manually change the locations of other two color bars to proper places
     fig.data[0].marker.colorbar.x = 0.28
     fig.data[1].marker.colorbar.x = 0.64
 
