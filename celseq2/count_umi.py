@@ -8,6 +8,10 @@ import HTSeq
 import pickle
 import argparse
 from collections import defaultdict, Counter
+import plotly.graph_objs as go
+from plotly.offline import plot
+import pandas as pd
+from celseq2.helper import base_name
 
 
 def invert_strand(iv):
@@ -100,6 +104,64 @@ def _flatten_umi_set(umi_set):
 # def umi_matrix(sam_fpath, features, len_umi=6, accept_aln_qual_min=10,
 #               is_gapped_aligner=False, dumpto=None):
 #     pass
+
+
+def plotly_alignment_stats(fpaths=[], saveto='', fnames=[]):
+    '''
+    Save a plotly box graph with a list of alignment stats files
+
+    Parameters
+    ----------
+    fpaths : list
+        A list of file paths
+    saveto : str
+        File path to save the html file as the plotly box graph
+    fnames : list
+        A list of strings to label each ``fpaths``
+
+    Returns
+    -------
+    bool
+        True if saving successfully, False otherwise
+    '''
+    if not fnames:
+        fnames = [base_name(f) for f in fpaths]
+    if len(fnames) != len(fpaths):
+        fnames = [base_name(f) for f in fpaths]
+    trace_data = []
+    # aln_diagnose_item = ["_unmapped",
+    #                      "_low_map_qual", '_multimapped', "_uniquemapped",
+    #                      "_no_feature", "_ambiguous",
+    #                      "_total"]
+    for i in range(len(fpaths)):
+        f = fpaths[i]
+        fname = fnames[i]
+
+        stats = pd.read_csv(f, index_col=0)
+
+        mapped = stats.loc['_multimapped', :] + stats.loc['_uniquemapped', :]
+        rate_mapped = mapped / stats.loc['_total', :]
+
+        overall_mapped = mapped.sum()
+        overall_total = stats.loc['_total', :].sum()
+
+        stats.fillna(value=0, inplace=True)
+        trace_data.append(
+            go.Box(
+                y=rate_mapped,
+                name='{} (#Mapped={}/#Total={})'.format(
+                    fname, overall_mapped, overall_total)))
+
+    layout = go.Layout(
+        xaxis=dict(showticklabels=False),
+        title='Mapped/Total alignments per BC per item')
+    fig = go.Figure(data=trace_data, layout=layout)
+    try:
+        plot(fig, filename=saveto, auto_open=False)
+        return(True)
+    except Exception as e:
+        print(e, flush=True)
+        return(False)
 
 
 def main():

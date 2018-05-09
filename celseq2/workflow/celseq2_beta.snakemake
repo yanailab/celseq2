@@ -96,6 +96,7 @@ SUBDIR_ALIGN = 'small_sam'
 SUBDIR_ALIGN_ITEM = 'item_sam'
 SUBDIR_UMI_CNT = 'small_umi_count'
 SUBDIR_UMI_SET = 'small_umi_set'
+SUBDIR_ALN_STATS = 'small_aln_stats'
 SUBDIR_EXPR = 'expr'
 SUBDIR_ST = 'ST'
 SUBDIR_LOG = 'small_log'
@@ -106,16 +107,12 @@ SUBDIR_QC_EXPR = 'qc_expr'
 
 SUBDIRS = [SUBDIR_INPUT,
            SUBDIR_FASTQ, SUBDIR_ALIGN, SUBDIR_ALIGN_ITEM,
-           SUBDIR_UMI_CNT, SUBDIR_UMI_SET,
+           SUBDIR_UMI_CNT, SUBDIR_UMI_SET, SUBDIR_ALN_STATS,
            SUBDIR_EXPR,
            SUBDIR_REPORT, SUBDIR_QC_EXPR,
            SUBDIR_LOG, SUBDIR_QSUB, SUBDIR_ANNO
            ]
 
-# aln_diagnose_item = ["_unmapped",
-#                      "_low_map_qual", '_multimapped', "_uniquemapped",
-#                      "_no_feature", "_ambiguous",
-#                      "_total"]
 
 '''
 Part-2: Snakemake rules
@@ -145,6 +142,7 @@ if RUN_CELSEQ2_TO_ST:
                 rmfolder(SUBDIR_LOG)
                 rmfolder(SUBDIR_UMI_CNT)
                 rmfolder(SUBDIR_UMI_SET)
+                rmfolder(SUBDIR_ALN_STATS)
 
 else:
     rule all:
@@ -165,6 +163,7 @@ else:
                 rmfolder(SUBDIR_LOG)
                 rmfolder(SUBDIR_UMI_CNT)
                 rmfolder(SUBDIR_UMI_SET)
+                rmfolder(SUBDIR_ALN_STATS)
 
 
 '''
@@ -517,6 +516,8 @@ rule count_umi:
                            '{itemID}', '{bcID}.pkl'),
         umiset = join_path(DIR_PROJ, SUBDIR_UMI_SET,
                            '{itemID}', '{bcID}.pkl'),
+        alncnt = join_path(DIR_PROJ, SUBDIR_ALN_STATS, ALIGNER,
+                           '{itemID}', '{bcID}.pkl'),
     message: 'Counting {input.sam}'
     run:
         features_f, _ = pickle.load(open(input.gff, 'rb'))
@@ -528,6 +529,7 @@ rule count_umi:
                                               dumpto=None)
         pickle.dump(umi_cnt, open(output.umicnt, 'wb'))
         pickle.dump(umi_set, open(output.umiset, 'wb'))
+        pickle.dump(aln_cnt, open(output.alncnt, 'wb'))
 
 
 # Pipeline Step 4a: Merge UMIs of cells to UMI matrix of item
@@ -637,6 +639,46 @@ rule qc_umi_matrix_per_experiment:
         cmd += '--sep {}'.format(',')
         shell(cmd)
 
+
+rule summarize_aln_stats_per_item:
+    input:
+        alncnt = dynamic(join_path(DIR_PROJ, SUBDIR_ALN_STATS, ALIGNER,
+                                   '{itemID}', '{bcID}.pkl')),
+    output:
+        aln_item = expand(join_path(DIR_PROJ, SUBDIR_REPORT,
+                                    '{itemID}',
+                                    'alignment-' + ALIGNER + '.csv'),
+                          itemID=item_names),
+    run:
+        aln_diagnose_item = ["_unmapped",
+                             "_low_map_qual", '_multimapped', "_uniquemapped",
+                             "_no_feature", "_ambiguous",
+                             "_total"]
+
+        # { item -> dict(cell_bc -> Counter(stats)) }
+        item_stats = defaultdict(dict)
+
+        for f in input.alncnt:
+            bc_name = base_name(f)  # BC-1-xxx
+            item_id = base_name(dir_name(f))  # item-1
+            item_stats[item_id][bc_name] = pickle.load(open(f, 'rb'))
+
+        # export to csv
+        for item_id, aln_dict in item_stats.items():
+            exp_id = SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']  # E1
+
+            for bc, cnt in aln_dict.items():
+                aln_dict[bc] = pd.Series([cnt[x] for x in aln_diagnose_item],
+                                         index=aln_diagnose_item)
+
+            aln_stats_df = pd.DataFrame(
+                aln_dict, index=aln_diagnose_item).fillna(0)
+
+            aln_stats_df.to_csv(join_path(DIR_PROJ, SUBDIR_REPORT,
+                                          item_id,
+                                          'alignment-' + ALIGNER + '.csv'))
+
+
 # rule report_alignment_log:
 #     input:
 #         df = dynamic(join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}', ALIGNER,
@@ -669,7 +711,9 @@ rule qc_umi_matrix_per_experiment:
 rule REPORT:
     input:
         demultiplexing_fastq = join_path(DIR_PROJ, SUBDIR_REPORT,
-                                         'demultiplexing_fastq.html')
+                                         'demultiplexing_fastq.html'),
+        alignment_stats = join_path(DIR_PROJ, SUBDIR_REPORT,
+                                    'alignment-{}.html'.format(ALIGNER)),
 
 # Inputs: project/report/item-*/demultiplexing.csv
 # Outputs:
@@ -690,6 +734,23 @@ rule report_combo_demultiplexing:
             fnames=stats_fpaths_labels)
         if not work:
             touch('{output.html}')
+
+rule report_alignment_stats:
+    input:
+        aln_item = rules.summarize_aln_stats_per_item.output.aln_item,
+    output:
+        html = join_path(DIR_PROJ, SUBDIR_REPORT,
+                         'alignment-{}.html'.format(ALIGNER)),
+    run:
+        from celseq2.count_umi import plotly_alignment_stats
+        stats_fpaths_labels = [base_name(dir_name(f)) for f in input.aln_item]
+        work = plotly_alignment_stats(
+            fpaths=input.aln_item,
+            saveto=output.html,
+            fnames=stats_fpaths_labels)
+        if not work:
+            touch('{output.html}')
+
 
 rule cleanall:
     message: "Remove all files under {DIR_PROJ}"

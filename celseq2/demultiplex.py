@@ -258,7 +258,7 @@ def plotly_demultiplexing_stats(fpaths=[], saveto='', fnames=[]):
                     overall_stats.loc['total', 'Reads(#)'])))
 
     layout = go.Layout(
-        legend=dict(x=-.1, y=-.2),
+        # legend=dict(x=-.1, y=-.2),
         xaxis=dict(showticklabels=False),
         title='Number of reads saved per BC per item')
     fig = go.Figure(data=num_reads_data, layout=layout)
