@@ -5,8 +5,25 @@
 
 :fa-calendar: **YYYY-MM-DD**
 
+:fa-code: []()
+
 :fa-star: **Features**
  -->
+
+---
+
+## :fa-flag-checkered: **v0.5.3**
+
+:fa-calendar: **2018-05-10**
+
+:fa-code: [2be1954](https://github.com/yanailab/celseq2/tree/2be195470f6b98e42f5d86f4f2736f29a543103f)
+
+:fa-star: **Features**
+
+
+- Plot demultiplexing and alignment stats to help users assess their data.
+- Column names of UMI-count matrix is named in a format of 'BC-i-xxxx' to suit users needs.
+
 
 ---
 
