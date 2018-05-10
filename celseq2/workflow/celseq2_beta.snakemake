@@ -127,6 +127,7 @@ if RUN_CELSEQ2_TO_ST:
         input:
             '_done_UMI',
             '_done_ST',
+            '_done_report',
         output:
             touch('_DONE'),
         run:
@@ -148,6 +149,7 @@ else:
     rule all:
         input:
             '_done_UMI',
+            '_done_report',
         output:
             touch('_DONE'),
         run:
@@ -560,14 +562,26 @@ rule summarize_umi_matrix_per_item:
             item_expr_matrix[item_id][bc_name] = pickle.load(open(f, 'rb'))
 
         # export to csv/hdf
+        dict_bc_id = pd.read_csv(BC_INDEX_FPATH,
+                                 sep='\t', index_col=BC_SEQ_COLUMN)
+        all_bc_seq = dict_bc_id.index.values
+        dict_bc_id = {seq: seq_id + 1 for seq_id, seq in enumerate(all_bc_seq)}
         for item_id, expr_dict in item_expr_matrix.items():
             exp_id = SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']  # E1
 
             for bc, cnt in expr_dict.items():
                 expr_dict[bc] = pd.Series([cnt[x] for x in export_genes],
                                           index=export_genes)
-
-            expr_df = pd.DataFrame(expr_dict, index=export_genes).fillna(0)
+            cnames_ordered = sorted(
+                expr_dict.keys(),
+                key=lambda xx: dict_bc_id.get(xx, float('Inf')))
+            expr_df = pd.DataFrame(
+                expr_dict,
+                index=export_genes,
+                columns=cnames_ordered)
+            expr_df.fillna(0, inplace=True)
+            expr_df.columns = ['BC-{}-{}'.format(
+                dict_bc_id.get(xx, 0), xx) for xx in cnames_ordered]
             expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, item_id, 'expr.csv'))
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
@@ -599,7 +613,7 @@ rule summarize_umi_matrix_per_experiment:
             exp_expr_matrix[exp_id] = defaultdict(dict)
 
         for f in input.umiset:
-            bc_name = base_name(f)  # BC-1-xxx
+            bc_name = base_name(f)  # xxx
             item_id = base_name(dir_name(f))  # item-1
             exp_id = SAMPLE_TABLE.loc[item_id, 'SAMPLE_NAME']
 
@@ -614,12 +628,26 @@ rule summarize_umi_matrix_per_experiment:
                 exp_expr_matrix[exp_id][bc_name][x] = y1 | y2
 
         # export to csv/hdf
+        dict_bc_id = pd.read_csv(BC_INDEX_FPATH,
+                                 sep='\t', index_col=BC_SEQ_COLUMN)
+        all_bc_seq = dict_bc_id.index.values
+        dict_bc_id = {seq: seq_id + 1 for seq_id, seq in enumerate(all_bc_seq)}
         for exp_id, expr_dict in exp_expr_matrix.items():
             for bc, cnt in expr_dict.items():
                 cnt = _flatten_umi_set(cnt)
                 expr_dict[bc] = pd.Series([cnt[x] for x in export_genes],
                                           index=export_genes)
-            expr_df = pd.DataFrame(expr_dict, index=export_genes).fillna(0)
+            cnames_ordered = sorted(
+                expr_dict.keys(),
+                key=lambda xx: dict_bc_id.get(xx, float('Inf')))
+            expr_df = pd.DataFrame(
+                expr_dict,
+                index=export_genes,
+                columns=cnames_ordered)
+            expr_df.fillna(0, inplace=True)
+            expr_df.columns = ['BC-{}-{}'.format(
+                dict_bc_id.get(xx, 0), xx) for xx in cnames_ordered]
+
             expr_df.to_csv(join_path(DIR_PROJ, SUBDIR_EXPR,
                                      exp_id, 'expr.csv'))
             expr_df.to_hdf(join_path(DIR_PROJ, SUBDIR_EXPR,
@@ -642,23 +670,23 @@ rule qc_umi_matrix_per_experiment:
 
 rule summarize_aln_stats_per_item:
     input:
-        alncnt = dynamic(join_path(DIR_PROJ, SUBDIR_ALN_STATS, ALIGNER,
-                                   '{itemID}', '{bcID}.pkl')),
+        # alncnt = dynamic(join_path(DIR_PROJ, SUBDIR_ALN_STATS, ALIGNER,
+        #                            '{itemID}', '{bcID}.pkl')),
+        '_done_UMI',
     output:
-        aln_item = expand(join_path(DIR_PROJ, SUBDIR_REPORT,
-                                    '{itemID}',
+        aln_item = expand(join_path(DIR_PROJ, SUBDIR_REPORT, '{itemName}',
                                     'alignment-' + ALIGNER + '.csv'),
-                          itemID=item_names),
+                          itemName=item_names),
     run:
         aln_diagnose_item = ["_unmapped",
                              "_low_map_qual", '_multimapped', "_uniquemapped",
                              "_no_feature", "_ambiguous",
                              "_total"]
-
         # { item -> dict(cell_bc -> Counter(stats)) }
         item_stats = defaultdict(dict)
-
-        for f in input.alncnt:
+        alncnt_files = glob.glob(join_path(
+            DIR_PROJ, SUBDIR_ALN_STATS, ALIGNER, 'item-*', '*.pkl'))
+        for f in alncnt_files:  # input.alncnt:
             bc_name = base_name(f)  # BC-1-xxx
             item_id = base_name(dir_name(f))  # item-1
             item_stats[item_id][bc_name] = pickle.load(open(f, 'rb'))
@@ -714,12 +742,18 @@ rule REPORT:
                                          'demultiplexing_fastq.html'),
         alignment_stats = join_path(DIR_PROJ, SUBDIR_REPORT,
                                     'alignment-{}.html'.format(ALIGNER)),
+    output:
+        flag = '_done_report'
+    run:
+        shell('touch {output.flag}')
 
 # Inputs: project/report/item-*/demultiplexing.csv
 # Outputs:
 #   - Stats file (csv) per item.
 #   - Plotly box graph for all the items.
 rule report_combo_demultiplexing:
+    input:
+        '_done_UMI',
     output:
         html = join_path(DIR_PROJ, SUBDIR_REPORT, 'demultiplexing_fastq.html')
     run:
@@ -737,7 +771,10 @@ rule report_combo_demultiplexing:
 
 rule report_alignment_stats:
     input:
-        aln_item = rules.summarize_aln_stats_per_item.output.aln_item,
+        aln_item = expand(join_path(DIR_PROJ, SUBDIR_REPORT,
+                                    '{itemName}',
+                                    'alignment-' + ALIGNER + '.csv'),
+                          itemName=item_names),
     output:
         html = join_path(DIR_PROJ, SUBDIR_REPORT,
                          'alignment-{}.html'.format(ALIGNER)),
