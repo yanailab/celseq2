@@ -5,7 +5,11 @@ from collections import Counter
 import argparse
 
 from celseq2.helper import filehandle_fastq_gz, print_logger
-from celseq2.helper import join_path, mkfolder
+from celseq2.helper import join_path, mkfolder, base_name
+
+import plotly.graph_objs as go
+from plotly.offline import plot
+import pandas as pd
 
 
 def str2int(s):
@@ -210,6 +214,60 @@ def write_demultiplexing(stats, dict_bc_id2seq, stats_fpath):
                                     stats['unqualified'] / stats['total'] * 100))
     fh_stats.write(formatter.format('total', stats['total'],
                                     stats['total'] / stats['total'] * 100))
+
+
+def plotly_demultiplexing_stats(fpaths=[], saveto='', fnames=[]):
+    '''
+    Save a plotly box graph with a list of demultiplexing stats files
+
+    Parameters
+    ----------
+    fpaths : list
+        A list of file paths
+    saveto : str
+        File path to save the html file as the plotly box graph
+    fnames : list
+        A list of strings to label each ``fpaths``
+
+    Returns
+    -------
+    bool
+        True if saving successfully, False otherwise
+    '''
+
+    if not fnames:
+        fnames = [base_name(f) for f in fpaths]
+    if len(fnames) != len(fpaths):
+        fnames = [base_name(f) for f in fpaths]
+
+    num_reads_data = []
+    for i in range(len(fpaths)):
+        f = fpaths[i]
+        fname = fnames[i]
+
+        stats = pd.read_csv(f, index_col=0)
+        cell_stats = stats.iloc[:-5, :]
+        # tail 5 lines are fixed as the overall stats
+        overall_stats = stats.iloc[-5:, :]
+        num_reads_data.append(
+            go.Box(
+                y=cell_stats['Reads(#)'],
+                name='{} (#Saved={}/#Total={})'.format(
+                    fname,
+                    overall_stats.loc['saved', 'Reads(#)'],
+                    overall_stats.loc['total', 'Reads(#)'])))
+
+    layout = go.Layout(
+        # legend=dict(x=-.1, y=-.2),
+        xaxis=dict(showticklabels=False),
+        title='Number of reads saved per BC per item')
+    fig = go.Figure(data=num_reads_data, layout=layout)
+    try:
+        plot(fig, filename=saveto, auto_open=False)
+        return(True)
+    except Exception as e:
+        print(e, flush=True)
+        return(False)
 
 
 def main():

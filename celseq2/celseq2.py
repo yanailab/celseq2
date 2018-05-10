@@ -29,41 +29,58 @@ Select optional parameters from snakemake.snakemake():
     * -n
     * --notemp (--nt)
 
+Name of rules to request outputs:
+    * all (default)
+    * TAG_FASTQ
+    * ANNOTATION
+    * ALIGNMENT
+    * COUNT_MATRIX
+    * QC_COUNT_MATRIX
+    * CELSEQ2_TO_ST (only available for ST data)
+
 Refs:
     - https://snakemake.readthedocs.io/en/stable/api_reference/snakemake.html
     - https://bitbucket.org/snakemake/snakemake/src/e11a57fe1f62f3f56c815d95d82871811dae81b3/snakemake/__init__.py?at=master&fileviewer=file-view-default#__init__.py-580:1127
 '''
 
+task_choices = ['all', 'TAG_FASTQ', 'ANNOTATION', 'ALIGNMENT',
+                'COUNT_MATRIX', 'QC_COUNT_MATRIX', 'CELSEQ2_TO_ST',
+                'REPORT']
+
 
 def get_argument_parser():
-    desc = ('CEL-Seq2: A Python Package for Processing CEL-Seq2 RNA-Seq Data.')
+    desc = ('celseq2: A Python Package for Processing CEL-Seq2 RNA-Seq Data.')
     parser = argparse.ArgumentParser(description=desc, add_help=True)
 
     parser.add_argument(
         "target",
         nargs="*",
         default=None,
-        help="Targets to build. May be rules or files.")
+        help=('Targets to build. '
+              'May be rules or files. '
+              'Task choices: {}').format(', '.join(task_choices)))
     parser.add_argument(
         "--config-file",
         metavar="FILE",
         required=True,
-        help=("Specify details of CEL-Seq2 and gneome information."))
+        help=("Configurations of the details of CEL-Seq2 "
+              " and running environment."))
     parser.add_argument(
         "--experiment-table",
         metavar="FILE",
         required=True,
-        help=("Space/Tab separated file specifying experiment design."))
+        help=("Space/Tab separated file specifying the R1/R2 reads "
+              "and the experiment design."))
     parser.add_argument(
         "--output-dir",
         metavar="DIRECTORY",
         required=True,
-        help=("All results are saved with here as root directory."))
+        help=("All results are saved here as root directory."))
 
     parser.add_argument(
         "--reverse-stranded", "--rs",
         action="store_true", default=False,
-        help="Read has to be mapped to the opposite strand as the feature")
+        help="Reads have to be mapped to the opposite strand of the feature.")
 
     parser.add_argument(
         "--celseq2-to-st", "--st",
