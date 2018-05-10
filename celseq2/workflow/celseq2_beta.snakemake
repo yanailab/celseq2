@@ -534,7 +534,7 @@ rule count_umi:
         pickle.dump(aln_cnt, open(output.alncnt, 'wb'))
 
 
-# Pipeline Step 4a: Merge UMIs of cells to UMI matrix of item
+# Pipeline Step 4a (deprecated) : Merge UMIs of cells to UMI matrix of item
 # Input: a list of umicnt pickle files of cells per item
 # Output: UMI-count matric file (csv & hdf) per item
 rule summarize_umi_matrix_per_item:
@@ -706,7 +706,7 @@ rule summarize_aln_stats_per_item:
                                           item_id,
                                           'alignment-' + ALIGNER + '.csv'))
 
-
+# (deprecated)
 # rule report_alignment_log:
 #     input:
 #         df = dynamic(join_path(DIR_PROJ, SUBDIR_LOG, '{itemid}', ALIGNER,
