@@ -12,15 +12,15 @@ BC_LENGTH: 6
 ####################################
 ## Alignment Tools
 ####################################
-## Which RNA-seq aligner to use? 'bowtie2' or 'star'
+## Which RNA-seq aligner to use: 'bowtie2', 'star', 'kallisto'
 ALIGNER: 'bowtie2'
-## What is the absolute path to command bowtie2?
+## What is the absolute path to the command bowtie2?
 BOWTIE2: '/absolute/path/to/bowtie2'
-## What is the sharef prefix of bowtie2 index?
+## What is the shared prefix of bowtie2 index file names?
 BOWTIE2_INDEX_PREFIX: '/absolute/path/to/bowtie2_index'
-## What is the absolute path to command STAR?
+## What is the absolute path to the command STAR?
 STAR: '/absolute/path/to/star'
-## Whare is the directory to save STAR index?
+## Where is the directory to save STAR index?
 STAR_INDEX_DIR: '/absolute/path/to/star/folder/'
 
 ## Extra parameters to run aligner. For example:

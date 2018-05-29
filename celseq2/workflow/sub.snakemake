@@ -1,0 +1,11 @@
+'''
+Test if snakemake can include multiple snakmake files so that
+we can better modulize the long workflow.
+
+Answer is Yes.
+'''
+
+rule sub_test:
+    output: '_test_sub'
+    run:
+        shell('touch {output} ')
