@@ -95,7 +95,7 @@ def rmfile(fpath):
 def base_name(fpath, ext=None):
     bs = os.path.basename(fpath)
     if not (ext is None or ext == ""):
-        bs.replace(ext, '')
+        bs = bs.replace(ext, '')
     bs = os.path.splitext(bs)[0]
     return(bs)
 
