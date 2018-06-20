@@ -44,8 +44,8 @@ BOWTIE2_INDEX_PREFIX = config.get('BOWTIE2_INDEX_PREFIX', None)
 BOWTIE2 = config.get('BOWTIE2', None)  # '/local/apps/bowtie2/2.3.1/bowtie2'
 STAR_INDEX_DIR = config.get('STAR_INDEX_DIR', None)
 STAR = config.get('STAR', None)
-KALLISTO = config.get('KALLISTO', None)
-KALLISTO_INDEX = config.get('KALLISTO_INDEX', None)
+# KALLISTO = config.get('KALLISTO', None)
+# KALLISTO_INDEX = config.get('KALLISTO_INDEX', None)
 ALIGNER_EXTRA_PARAMETERS = config.get('ALIGNER_EXTRA_PARAMETERS', '')
 
 # Annotations
@@ -347,11 +347,16 @@ rule tag_fastq:
         for fq in input.fq:
             fq_itemid = base_name(dir_name(fq))
             dict_itemid_fq.setdefault(fq_itemid, []).append(fq)
+
         for itemid, item_fq in dict_itemid_fq.items():
             itemid_tag_fq = join_path(DIR_PROJ, SUBDIR_FASTQ,
                                       itemid, 'TAGGED.bigfastq')
-            cmd = 'cat {} > {} '.format(' '.join(item_fq), itemid_tag_fq)
-            shell(cmd)
+            # cmd = 'cat {} > {} '.format(' '.join(item_fq), itemid_tag_fq)
+            if is_nonempty_file(itemid_tag_fq):
+                shell('rm {itemid_tag_fq}')
+            for fq in item_fq:
+                cmd = 'cat {} >> {}'.format(fq, itemid_tag_fq)
+                shell(cmd)
             print_logger('Tagged FQ: {}'.format(itemid_tag_fq))
 
 
@@ -426,36 +431,36 @@ if ALIGNER == 'star':
             shell('mv {starsam} {output.sam} ')
             shell('mv {starlog} {output.log} ')
 
-if ALIGNER == 'kallisto':
-    rule align_kallisto_pseudobam:
-        input:
-            fq = join_path(DIR_PROJ, SUBDIR_FASTQ,
-                           '{itemID}', 'TAGGED.bigfastq'),
-        output:
-            sam = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
-                            '{itemID}', ALIGNER + '.bigsam'),
-        params:
-            threads = num_threads,
-            kallisto_outdir_tmp = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
-                                            '{itemID}', '.kallisto', ''),
-            aligner_extra_parameters = ALIGNER_EXTRA_PARAMETERS,
-        # shadow: "shallow"
-        log:
-            join_path(DIR_PROJ, SUBDIR_LOG, '{itemID}',
-                      'Align-Kallisto.log')
-        run:
-            cmd = '{KALLISTO} '
-            cmd += '--index {KALLISTO_INDEX} '
-            cmd += '--output-dir {params.kallisto_outdir_tmp} '
-            cmd += '--seed 42 --single --pseudobam '
-            cmd += '--fragment-length {CUT_LENGTH} '
-            cmd += '--sd 2 '
-            cmd += '--threads {params.threads} '
-            cmd += '{params.aligner_extra_parameters} '
-            cmd += '{input.fq} '
-            cmd += '>{output.sam} '
-            cmd += '2>{log} '
-            shell(cmd)
+# if ALIGNER == 'kallisto':
+#     rule align_kallisto_pseudobam:
+#         input:
+#             fq = join_path(DIR_PROJ, SUBDIR_FASTQ,
+#                            '{itemID}', 'TAGGED.bigfastq'),
+#         output:
+#             sam = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
+#                             '{itemID}', ALIGNER + '.bigsam'),
+#         params:
+#             threads = num_threads,
+#             kallisto_outdir_tmp = join_path(DIR_PROJ, SUBDIR_ALIGN_ITEM,
+#                                             '{itemID}', '.kallisto', ''),
+#             aligner_extra_parameters = ALIGNER_EXTRA_PARAMETERS,
+#         # shadow: "shallow"
+#         log:
+#             join_path(DIR_PROJ, SUBDIR_LOG, '{itemID}',
+#                       'Align-Kallisto.log')
+#         run:
+#             cmd = '{KALLISTO} '
+#             cmd += '--index {KALLISTO_INDEX} '
+#             cmd += '--output-dir {params.kallisto_outdir_tmp} '
+#             cmd += '--seed 42 --single --pseudobam '
+#             cmd += '--fragment-length {CUT_LENGTH} '
+#             cmd += '--sd 2 '
+#             cmd += '--threads {params.threads} '
+#             cmd += '{params.aligner_extra_parameters} '
+#             cmd += '{input.fq} '
+#             cmd += '>{output.sam} '
+#             cmd += '2>{log} '
+#             shell(cmd)
 
 
 # Pipeline Step 2b: Combo-demultiplex the SAM file
