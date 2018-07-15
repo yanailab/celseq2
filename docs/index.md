@@ -149,11 +149,13 @@ expr/
 Results of <kbd>item-X</kbd> are useful to assess variation when FASTQ
 files from multiple lanes, or technical/biological replicates are present.
 
-## About
+## Authors
 
-Authors: See <https://github.com/yanailab/celseq2/blob/master/AUTHORS>
+See <https://github.com/yanailab/celseq2/blob/master/AUTHORS>
 
-License: See <https://github.com/yanailab/celseq2/blob/master/LICENSE>
+## License
+
+See <https://github.com/yanailab/celseq2/blob/master/LICENSE>
 
 
 [^Hashimshony2016]: Hashimshony, T. et al. CEL-Seq2: sensitive highly-

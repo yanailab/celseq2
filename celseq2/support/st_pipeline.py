@@ -38,7 +38,7 @@ def celseq2stpipeline(celseq2_fpath, spatial_map, out,
     genes = map(lambda x: x.replace(' ', '_'), expr_valid.index.values)
     colnames = expr_valid.columns.values
     # fhout.write('{}\t{}\n'.format('', '\t'.join(genes)))  # header
-    fhout.write('{}\t{}\t{}\n'.format('Row', 'Col', '\t'.join(genes)))  # header
+    fhout.write('{}\t{}\t{}\n'.format('X', 'Y', '\t'.join(genes)))  # header
 
     for colname in colnames:
         tmp = colname.replace('.', '-') # BC-1-ATGC or ATGC

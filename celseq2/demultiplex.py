@@ -82,6 +82,8 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
                    bc_qual_min=10,
                    is_gzip=True,
                    save_unknown_bc_fastq=False,
+                   tagging_only=False,
+                   tag_to='tagged.fastq',
                    do_bc_rev_complement=False,
                    do_tx_rev_complement=False,
                    verbose=False):
@@ -110,8 +112,18 @@ def demultiplexing(read1_fpath, read2_fpath, dict_bc_id2seq,
     bc_fhout['UNKNOWNBC_R2'] = join_path(outdir, 'UNKNOWN',
                                          'UNKNOWNBC_R2.fq')
 
+    if tagging_only:
+        out_fpath_tagged_fq = join_path(outdir, tag_to)
+        out_fh_tagged_fq = open(out_fpath_tagged_fq, 'w')
+
     for bc_seq, v in bc_fhout.items():
-        bc_fhout[bc_seq] = open(v, 'w')
+        if bc_seq.startswith('UNKNOWN'):
+            bc_fhout[bc_seq] = open(v, 'w')
+            continue
+        if tagging_only:
+            bc_fhout[bc_seq] = out_fh_tagged_fq
+        else:
+            bc_fhout[bc_seq] = open(v, 'w')
 
     i = 0
     while(True):
@@ -310,6 +322,16 @@ def main():
     parser.add_argument('--save-unknown-bc-fastq',
                         dest='save_unknown_bc_fastq', action='store_true')
     parser.set_defaults(save_unknown_bc_fastq=False)
+    parser.add_argument('--tagging-only',
+                        dest='tagging_only', action='store_true',
+                        help=('Demultiplexed reads are merged to a file named'
+                              ' \"tagged.fastq\" under --out-dir.'))
+    parser.set_defaults(tagging_only=False)
+    parser.add_argument(
+        '--tag-to',
+        dest='tag_to', default='tagged.fastq',
+        help=('File base name to save the tagged fastq file. '
+              'Only used when tagging_only.'))
     parser.add_argument('--verbose', dest='verbose', action='store_true')
     parser.set_defaults(verbose=False)
 
@@ -333,6 +355,8 @@ def main():
                          bc_qual_min=args.min_bc_quality,
                          is_gzip=args.is_gzip,
                          save_unknown_bc_fastq=args.save_unknown_bc_fastq,
+                         tagging_only=args.tagging_only,
+                         tag_to=args.tag_to,
                          do_bc_rev_complement=False,
                          do_tx_rev_complement=False,
                          verbose=args.verbose)
