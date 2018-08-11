@@ -2,7 +2,7 @@
 ## Tech Setting
 ####################################
 BC_INDEX_FPATH: '/absolute/path/to/wonderful_umi.tab'
-BC_SEQ_COLUMN: 0
+BC_SEQ_COLUMN: 1
 BC_IDs_DEFAULT: '1-96'
 UMI_START_POSITION: 0
 UMI_LENGTH: 6
