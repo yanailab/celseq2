@@ -153,7 +153,7 @@ def main():
 
         printshellcmds=True,
         printreason=True,
-        timestamp=True,
+        # timestamp=True,  # deprecated since snakemake 5.2.2
         latency_wait=300,
         jobname="celseq2_job.{rulename}.{jobid}.sh",
         keepgoing=False,
