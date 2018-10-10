@@ -63,7 +63,7 @@ def count_umi(sam_fpath, features, stranded='yes',
         except KeyError:
             pass
 
-        if aln.aQual < accept_aln_qual_min:
+        if not aln.aQual or aln.aQual < accept_aln_qual_min:
             aln_cnt["_low_map_qual"] += 1
             continue
 
